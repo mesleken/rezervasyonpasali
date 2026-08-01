@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAŞALI — Bungalow & Camping & Karavan Doluluk & Rezervasyon Yönetimi</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏕️</text></svg>">
+</head>
+<body>
+
+  <!-- HEADER & MARKA BAR -->
+  <header class="header-bar">
+    <div class="header-container">
+      <div class="brand-logo">
+        <div class="logo-icon">🏕️</div>
+        <div class="brand-text">
+          <h1>PAŞALI BUNGALOW & CAMPING</h1>
+          <p>Muğla Akbük / Gökova Körfezi — Doluluk Takip ve Rezervasyon Sistemi</p>
+        </div>
+      </div>
+
+      <!-- Özet İstatistik Kartları -->
+      <div class="stats-summary">
+        <div class="stat-pill">
+          <span class="stat-icon">📊</span>
+          <div>
+            <div class="stat-val" id="statTodayOccupied">0 / 36</div>
+            <div class="stat-lbl">Bugün Dolu Birimler</div>
+          </div>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-icon">👥</span>
+          <div>
+            <div class="stat-val" id="statTodayGuests">0</div>
+            <div class="stat-lbl">Aktif Misafir</div>
+          </div>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-icon">💰</span>
+          <div>
+            <div class="stat-val" id="statMonthlyRevenue">0 ₺</div>
+            <div class="stat-lbl">Bu Ayki Ciro</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ANA İÇERİK -->
+  <main class="main-wrapper">
+
+    <!-- 6 FARKLI KİRALANAN ITEM İÇİN SEKMELER -->
+    <nav class="tabs-navigation" id="tabsNav">
+      <button class="tab-btn active" data-type="bungalov" data-count="3">
+        <div class="tab-btn-content">
+          <span class="tab-btn-icon">🏠</span>
+          <span>Bungalov</span>
+        </div>
+        <span class="tab-count-badge">3 Adet</span>
+      </button>
+
+      <button class="tab-btn" data-type="cadir" data-count="8">
+        <div class="tab-btn-content">
+          <span class="tab-btn-icon">⛺</span>
+          <span>Çadır</span>
+        </div>
+        <span class="tab-count-badge">8 Adet</span>
+      </button>
+
+      <button class="tab-btn" data-type="dome" data-count="2">
+        <div class="tab-btn-content">
+          <span class="tab-btn-icon">🔵</span>
+          <span>Dome Çadır</span>
+        </div>
+        <span class="tab-count-badge">2 Adet</span>
+      </button>
+
+      <button class="tab-btn" data-type="cadir_yeri" data-count="10">
+        <div class="tab-btn-content">
+          <span class="tab-btn-icon">📍</span>
+          <span>Çadır Yeri</span>
+        </div>
+        <span class="tab-count-badge">10 Adet</span>
+      </button>
+
+      <button class="tab-btn" data-type="karavan" data-count="3">
+        <div class="tab-btn-content">
+          <span class="tab-btn-icon">🚐</span>
+          <span>Karavan</span>
+        </div>
+        <span class="tab-count-badge">3 Adet</span>
+      </button>
+
+      <button class="tab-btn" data-type="karavan_yeri" data-count="10">
+        <div class="tab-btn-content">
+          <span class="tab-btn-icon">🅿️</span>
+          <span>Karavan Yeri</span>
+        </div>
+        <span class="tab-count-badge">10 Adet</span>
+      </button>
+    </nav>
+
+    <!-- TAKVİM KONTROL VE AKSİYON BAR -->
+    <section class="calendar-control-card">
+      <div class="month-picker">
+        <button class="nav-month-btn" id="prevMonthBtn" title="Önceki Ay">‹</button>
+        <div class="current-month-display" id="currentMonthLabel">Ağustos 2026</div>
+        <button class="nav-month-btn" id="nextMonthBtn" title="Sonraki Ay">›</button>
+      </div>
+
+      <!-- Lejant (Renk İpuçları) -->
+      <div class="calendar-legend">
+        <div class="legend-item">
+          <span class="legend-dot empty"></span>
+          <span>Boş Güvenli</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot occupied"></span>
+          <span>Dolu / Rezerve</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot transition"></span>
+          <span>Giriş / Çıkış Günü</span>
+        </div>
+      </div>
+
+      <!-- Arama ve Hızlı Butonlar -->
+      <div class="calendar-actions">
+        <div class="search-input-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Misafir adı, Tel, TC ara...">
+        </div>
+        <button class="btn-primary" id="openNewResModalBtn">
+          <span>➕</span> Yeni Rezervasyon
+        </button>
+      </div>
+    </section>
+
+    <!-- DİNAMİK TAKVİM MATRİSİ GÖRÜNÜMÜ -->
+    <section class="calendar-view-card">
+      <div id="calendarContainer">
+        <!-- calendar.js tarafından doldurulacak -->
+      </div>
+    </section>
+
+    <!-- REZERVASYON LİSTESİ PANELİ -->
+    <section class="reservations-list-section">
+      <div class="section-title">
+        <span>📋</span> Active & Geçmiş Rezervasyon Listesi
+      </div>
+      <table class="reservations-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Kategori / No</th>
+            <th>Misafir Ad Soyad</th>
+            <th>Telefon</th>
+            <th>TC Kimlik</th>
+            <th>Giriş - Çıkış</th>
+            <th>Kişi</th>
+            <th>Gecelik</th>
+            <th>Toplam</th>
+            <th>Durum</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="reservationsTableBody">
+          <!-- JS ile doldurulacak -->
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- REZERVASYON FORMU MODALİ -->
+  <div class="modal-backdrop" id="reservationModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">🏕️ Yeni Rezervasyon Oluştur</h3>
+        <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <form id="reservationForm">
+        <input type="hidden" id="formResId">
+        <div class="modal-body">
+          <div class="form-grid">
+            
+            <div class="form-group">
+              <label>Kiralık Birim Türü <span class="req">*</span></label>
+              <select id="formItemType" class="form-control" required>
+                <option value="bungalov">🏠 Bungalov</option>
+                <option value="cadir">⛺ Çadır</option>
+                <option value="dome">🔵 Dome Çadır</option>
+                <option value="cadir_yeri">📍 Çadır Yeri</option>
+                <option value="karavan">🚐 Karavan</option>
+                <option value="karavan_yeri">🅿️ Karavan Yeri</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Birim Numarası <span class="req">*</span></label>
+              <select id="formUnitNumber" class="form-control" required>
+                <!-- JS ile birim sayısına göre dinamik gelecek -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Giriş Tarihi <span class="req">*</span></label>
+              <input type="date" id="formCheckIn" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label>Çıkış Tarihi <span class="req">*</span></label>
+              <input type="date" id="formCheckOut" class="form-control" required>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Misafir Adı Soyadı <span class="req">*</span></label>
+              <input type="text" id="formGuestName" class="form-control" placeholder="Örn: Ahmet Yılmaz" required>
+            </div>
+
+            <div class="form-group">
+              <label>Telefon Numarası</label>
+              <input type="tel" id="formPhone" class="form-control" placeholder="0532 123 45 67">
+            </div>
+
+            <div class="form-group">
+              <label>TC Kimlik No</label>
+              <input type="text" id="formTcNo" class="form-control" maxlength="11" placeholder="11 Hane TC">
+            </div>
+
+            <div class="form-group">
+              <label>Misafir Sayısı (Kişi)</label>
+              <input type="number" id="formGuestCount" class="form-control" min="1" value="2">
+            </div>
+
+            <div class="form-group">
+              <label>Gecelik Ücret (₺)</label>
+              <input type="number" id="formPricePerNight" class="form-control" min="0" step="50" placeholder="0.00">
+            </div>
+
+            <div class="form-group full-width">
+              <div class="price-summary-box">
+                <div class="lbl">
+                  <span>Hesaplanan Gece: <strong id="calculatedNights">0</strong> gece</span>
+                </div>
+                <div class="val" id="calculatedTotalPrice">0.00 ₺</div>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label>Özel Notlar & İstekler</label>
+              <textarea id="formNotes" class="form-control" placeholder="Örn: Erken giriş isteği var, araç otoparkta..."></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="cancelModalBtn">İptal</button>
+          <button type="submit" class="btn-primary" id="saveReservationBtn">
+            <span>💾</span> Rezervasyonu Kaydet
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST BİLDİRİMLERİ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- UYGULAMA SCRIPTLERİ -->
+  <script src="calendar.js"></script>
+  <script src="modal.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

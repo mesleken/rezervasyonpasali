@@ -1,0 +1,26 @@
+{
+  "name": "PAŞALI Bungalow & Camping",
+  "short_name": "PAŞALI",
+  "description": "Kamp alanı doluluk takibi ve rezervasyon yönetim sistemi",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07111e",
+  "theme_color": "#00b4d8",
+  "categories": ["business", "productivity"],
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
