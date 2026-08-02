@@ -27,8 +27,8 @@
     color: #f0f8ff;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
-    overscroll-behavior: none;
     overflow-x: hidden;
+    overflow-y: auto;
     width: 100%;
     max-width: 100vw;
   }

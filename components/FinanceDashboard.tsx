@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { formatDateTR, calcNights } from '@/lib/dateUtils'
+import { formatDateTR, calcNights, monthNameTR } from '@/lib/dateUtils'
 import { CATEGORIES } from '@/types'
 import type { Reservation } from '@/types'
 
@@ -10,10 +10,125 @@ interface Props {
   onLogout: () => void
 }
 
-type PeriodFilter = 'today' | 'week' | 'month' | 'last_month' | 'year' | 'all' | 'custom'
+type PeriodFilter = 'today' | 'week' | 'month' | 'year' | 'all' | 'custom'
+
+// Ciro Dağılımı Donut Pie Chart Bileşeni
+function RevenuePieChart({ data, totalRevenue }: { data: any[]; totalRevenue: number }) {
+  const CATEGORY_COLORS: Record<string, string> = {
+    bungalov: '#000000', // Siyah (Belirgin Mat Siyah)
+    cadir: '#2a9d8f',
+    dome: '#3498db',
+    cadir_yeri: '#f4a261',
+    karavan: '#9b59b6',
+    karavan_yeri: '#e74c3c',
+  }
+
+  const radius = 70
+  const strokeWidth = 24
+  const circumference = 2 * Math.PI * radius
+  let accumulatedPercent = 0
+
+  const validData = data.filter(d => d.revenue > 0)
+
+  return (
+    <div className="glass-card p-5 space-y-4 border border-white/10">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
+          <span>🥧</span>
+          <span>Konaklama Türlerine Göre Ciro Pasta Grafiği</span>
+        </h3>
+        <span className="text-xs text-[#8ba0b5] font-medium bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+          Net Ciro: <strong className="text-white">{totalRevenue.toLocaleString('tr-TR')} TL</strong>
+        </span>
+      </div>
+
+      {totalRevenue === 0 || validData.length === 0 ? (
+        <div className="text-center py-8 text-[#8ba0b5] text-xs">
+          Seçilen dönem için ciro verisi bulunamadı.
+        </div>
+      ) : (
+        <div className="flex flex-col md:flex-row items-center justify-around gap-6 pt-2">
+          {/* SVG Donut */}
+          <div className="relative w-48 h-48 shrink-0 flex items-center justify-center">
+            <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
+              <circle
+                cx="100"
+                cy="100"
+                r={radius}
+                fill="transparent"
+                stroke="rgba(255, 255, 255, 0.05)"
+                strokeWidth={strokeWidth}
+              />
+              {validData.map(item => {
+                const percent = (item.revenue / totalRevenue) * 100
+                const strokeDasharray = `${(percent / 100) * circumference} ${circumference}`
+                const strokeDashoffset = -((accumulatedPercent / 100) * circumference)
+                accumulatedPercent += percent
+
+                return (
+                  <circle
+                    key={item.cat.slug}
+                    cx="100"
+                    cy="100"
+                    r={radius}
+                    fill="transparent"
+                    stroke={CATEGORY_COLORS[item.cat.slug] || '#000000'}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={strokeDasharray}
+                    strokeDashoffset={strokeDashoffset}
+                    style={item.cat.slug === 'bungalov' ? { filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.6))' } : undefined}
+                    className="transition-all duration-500 hover:opacity-80 cursor-pointer"
+                  >
+                    <title>{`${item.cat.label}: ${item.revenue.toLocaleString('tr-TR')} TL (%${Math.round(percent)})`}</title>
+                  </circle>
+                )
+              })}
+            </svg>
+
+            {/* Donut Merkez Alanı */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none p-2">
+              <span className="text-[10px] text-[#8ba0b5] font-medium uppercase tracking-wider">Net Ciro</span>
+              <span className="font-extrabold text-sm text-white mt-0.5">
+                {totalRevenue.toLocaleString('tr-TR')} ₺
+              </span>
+            </div>
+          </div>
+
+          {/* Lejant (Kategori Kırılım Listesi) */}
+          <div className="flex-1 w-full space-y-2 max-w-md">
+            {data.map(item => {
+              const isBungalov = item.cat.slug === 'bungalov'
+              const color = CATEGORY_COLORS[item.cat.slug] || '#00b4d8'
+              return (
+                <div key={item.cat.slug} className="flex items-center justify-between text-xs bg-white/5 p-2 rounded-xl border border-white/5 hover:border-white/20 transition-all">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                        isBungalov ? 'bg-black border border-white/70 shadow-md shadow-white/20' : ''
+                      }`}
+                      style={{ backgroundColor: isBungalov ? '#000000' : color }}
+                    />
+                    <span className="text-white font-medium">{item.cat.icon} {item.cat.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">{item.revenue.toLocaleString('tr-TR')} ₺</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded text-cyan-300 bg-cyan-950/60 border border-cyan-500/30">
+                      %{item.revenuePercent}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function FinanceDashboard({ onBack, onLogout }: Props) {
   const [period, setPeriod] = useState<PeriodFilter>('month')
+  const [monthDate, setMonthDate] = useState<Date>(new Date())
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   
@@ -34,11 +149,21 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
   const [newPin, setNewPin] = useState('')
   const [pinChangeMsg, setPinChangeMsg] = useState('')
 
+  // Ay Değiştirme
+  function goFinanceMonth(offset: number) {
+    setMonthDate(prev => {
+      const d = new Date(prev)
+      d.setMonth(d.getMonth() + offset)
+      return d
+    })
+    setPeriod('month')
+  }
+
   // Tarih aralığını döneme göre hesapla
   const calculateDates = useCallback((p: PeriodFilter) => {
     const now = new Date()
-    const y = now.getFullYear()
-    const m = now.getMonth()
+    const y = monthDate.getFullYear()
+    const m = monthDate.getMonth()
 
     if (p === 'today') {
       const t = now.toISOString().split('T')[0]
@@ -61,30 +186,20 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
       const mStr = String(m + 1).padStart(2, '0')
       return {
         start: `${y}-${mStr}-01`,
-        end: `${y}-${mStr}-${daysInMonth}`
-      }
-    }
-    if (p === 'last_month') {
-      const prevM = m === 0 ? 11 : m - 1
-      const prevY = m === 0 ? y - 1 : y
-      const daysInMonth = new Date(prevY, prevM + 1, 0).getDate()
-      const mStr = String(prevM + 1).padStart(2, '0')
-      return {
-        start: `${prevY}-${mStr}-01`,
-        end: `${prevY}-${mStr}-${daysInMonth}`
+        end: `${y}-${mStr}-${String(daysInMonth).padStart(2, '0')}`
       }
     }
     if (p === 'year') {
       return {
-        start: `${y}-01-01`,
-        end: `${y}-12-31`
+        start: `${now.getFullYear()}-01-01`,
+        end: `${now.getFullYear()}-12-31`
       }
     }
     if (p === 'all') {
       return { start: '', end: '' }
     }
     return { start: startDate, end: endDate }
-  }, [startDate, endDate])
+  }, [period, monthDate, startDate, endDate])
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -165,15 +280,50 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
     }, 1500)
   }
 
+  // Seçili dönemin gün sayısı
+  const getPeriodDays = useCallback(() => {
+    const now = new Date()
+    if (period === 'today') return 1
+    if (period === 'week') return 7
+    if (period === 'month') return new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate()
+    if (period === 'year') return 365
+    const { start, end } = calculateDates(period)
+    if (start && end) {
+      const d1 = new Date(start)
+      const d2 = new Date(end)
+      const diff = Math.ceil(Math.abs(d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      return Math.max(1, diff)
+    }
+    return 30
+  }, [period, monthDate, calculateDates])
+
+  const periodDays = getPeriodDays()
+
   // Tüm 6 Kategorinin Eksiksiz Haritalanması
   const allCategoryStats = CATEGORIES.map(cat => {
     const found = categoryStats.find(s => s.slug === cat.slug)
+    const count = found?.count || 0
+    const revenue = found?.revenue || 0
+    const deposit = found?.deposit || 0
+    const remaining = found?.remaining || 0
+    const nights = found?.nights || 0
+
+    // 1. Ciro Payı Yüzdesi (Tüm tesise göre)
+    const revenuePercent = summary.totalRevenue > 0 ? Math.round((revenue / summary.totalRevenue) * 100) : 0
+
+    // 2. Birim Doluluk Yüzdesi (Kendi kapasitesine & döneme göre)
+    const capacityNights = cat.count * periodDays
+    const occupancyPercent = capacityNights > 0 ? Math.min(100, Math.round((nights / capacityNights) * 100)) : 0
+
     return {
       cat,
-      count: found?.count || 0,
-      revenue: found?.revenue || 0,
-      deposit: found?.deposit || 0,
-      remaining: found?.remaining || 0,
+      count,
+      revenue,
+      deposit,
+      remaining,
+      nights,
+      revenuePercent,
+      occupancyPercent
     }
   })
 
@@ -194,7 +344,7 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
             <span className="text-2xl">📊</span>
             <div>
               <h2 className="font-display font-bold text-lg text-white leading-tight">Yönetici Finans Dashboard</h2>
-              <p className="text-xs text-[#8ba0b5]">Gelir, Kapora ve Alacak Analizleri</p>
+              <p className="text-xs text-[#8ba0b5]">Gelir ve Alacak Analizleri</p>
             </div>
           </div>
         </div>
@@ -217,28 +367,46 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
           >
             🔑 PIN Değiştir
           </button>
-
-          {/* Oturumu Kapat */}
-          <button
-            onClick={onLogout}
-            className="px-3 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-semibold transition-all touch-target"
-          >
-            🔒 Kilitle
-          </button>
         </div>
       </div>
 
       {/* Dönem Filtreleme Barı */}
       <div className="glass-card p-4 space-y-3">
-        <label className="block text-xs font-bold text-[#8ba0b5] uppercase tracking-wider">
-          📅 Dönem Filtresi:
-        </label>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <label className="text-xs font-bold text-[#8ba0b5] uppercase tracking-wider">
+            📅 Dönem Filtresi:
+          </label>
+
+          {/* Ay Gezinme Navigatörü (‹ Ağustos 2026 ›) */}
+          <div className="flex items-center gap-1.5 bg-[#07111e] border border-[#00b4d8]/40 rounded-xl p-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => goFinanceMonth(-1)}
+              className="btn-ghost w-8 h-8 rounded-lg text-base flex items-center justify-center shrink-0 touch-target font-bold"
+              aria-label="Önceki Ay"
+            >
+              ‹
+            </button>
+            <span className="font-display font-bold text-xs sm:text-sm text-center text-white px-2 min-w-[120px]">
+              {monthNameTR(monthDate.getMonth())} {monthDate.getFullYear()}
+            </span>
+            <button
+              type="button"
+              onClick={() => goFinanceMonth(1)}
+              className="btn-ghost w-8 h-8 rounded-lg text-base flex items-center justify-center shrink-0 touch-target font-bold"
+              aria-label="Sonraki Ay"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
+        {/* Hızlı Seçim Butonları */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {[
+            { id: 'month', label: `📅 Ay Bazlı (${monthNameTR(monthDate.getMonth()).slice(0, 3)})` },
             { id: 'today', label: 'Bugün' },
             { id: 'week', label: 'Bu Hafta' },
-            { id: 'month', label: 'Bu Ay' },
-            { id: 'last_month', label: 'Geçen Ay' },
             { id: 'year', label: 'Bu Yıl' },
             { id: 'all', label: 'Tüm Zamanlar' },
             { id: 'custom', label: 'Özel Tarih' },
@@ -283,7 +451,7 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
       </div>
 
       {/* KPI Kartları (Metrikler) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Kart 1: Net Toplam Ciro */}
         <div className="glass-card p-5 border-l-4 border-l-[#00b4d8] bg-gradient-to-br from-cyan-950/40 to-slate-900/60 space-y-1">
           <div className="flex justify-between items-center text-xs text-[#8ba0b5]">
@@ -298,21 +466,7 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
           </div>
         </div>
 
-        {/* Kart 2: Alınan Kapora */}
-        <div className="glass-card p-5 border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-950/40 to-slate-900/60 space-y-1">
-          <div className="flex justify-between items-center text-xs text-[#8ba0b5]">
-            <span>Tahsil Edilen Kapora</span>
-            <span className="text-xl">🏦</span>
-          </div>
-          <div className="text-2xl font-extrabold text-amber-400">
-            {loading ? '...' : `${summary.totalDeposit.toLocaleString('tr-TR')} TL`}
-          </div>
-          <div className="text-[11px] text-amber-300/80 font-medium pt-1">
-            Kasaya giren ödemeler
-          </div>
-        </div>
-
-        {/* Kart 3: Alınması Gereken Kalan */}
+        {/* Kart 2: Alınması Gereken Kalan */}
         <div className="glass-card p-5 border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-950/40 to-slate-900/60 space-y-1">
           <div className="flex justify-between items-center text-xs text-[#8ba0b5]">
             <span>Gelecek Kalan Tahsilat</span>
@@ -326,7 +480,7 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
           </div>
         </div>
 
-        {/* Kart 4: Satılan Gece & Ortalama Fiyat */}
+        {/* Kart 3: Satılan Gece & Ortalama Fiyat */}
         <div className="glass-card p-5 border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-950/40 to-slate-900/60 space-y-1">
           <div className="flex justify-between items-center text-xs text-[#8ba0b5]">
             <span>Satılan Gece & Ortalama</span>
@@ -341,50 +495,63 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
         </div>
       </div>
 
+      {/* Ciro Dağılımı Donut Pasta Grafiği */}
+      <RevenuePieChart data={allCategoryStats} totalRevenue={summary.totalRevenue} />
+
       {/* Kategori Bazlı Dağılım (Tüm 6 Konaklama Türü) */}
       <div className="glass-card p-5 space-y-4">
         <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
           <span>🏠</span>
-          <span>Konaklama Türlerine Göre Gelir Dağılımı</span>
+          <span>Konaklama Türlerine Göre Gelir & Doluluk Dağılımı</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {allCategoryStats.map(({ cat, count, revenue, deposit, remaining }) => {
-            const percent = summary.totalRevenue > 0 ? Math.round((revenue / summary.totalRevenue) * 100) : 0
+          {allCategoryStats.map(({ cat, count, revenue, remaining, nights, revenuePercent, occupancyPercent }) => {
+            const avgPrice = nights > 0 ? Math.round(revenue / nights) : 0
             return (
               <div
                 key={cat.slug}
                 className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2.5 hover:border-[#00b4d8]/40 transition-all"
               >
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-1 flex-wrap">
                   <div className="flex items-center gap-2 font-bold text-sm text-white">
                     <span>{cat.icon}</span>
                     <span>{cat.label}</span>
                   </div>
-                  <span className="text-xs font-bold text-[#00b4d8] bg-[#00b4d8]/15 px-2 py-0.5 rounded-md border border-[#00b4d8]/30">
-                    {count} rezervasyon (%{percent})
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                      %{occupancyPercent} Doluluk
+                    </span>
+                    <span className="text-[11px] font-bold text-[#00b4d8] bg-[#00b4d8]/15 px-2 py-0.5 rounded-md border border-[#00b4d8]/30">
+                      %{revenuePercent} Ciro Payı
+                    </span>
+                  </div>
                 </div>
 
-                {/* Yüzde Barı */}
+                {/* Yüzde Barı — Ciro Payı Görselleştirme */}
                 <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-[#00b4d8] to-[#2a9d8f] h-full rounded-full transition-all duration-500"
-                    style={{ width: `${percent}%` }}
+                    style={{ width: `${revenuePercent}%` }}
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-1 pt-1 text-center text-xs">
-                  <div className="bg-black/20 p-1.5 rounded border border-white/5">
-                    <div className="text-[10px] text-[#8ba0b5]">Toplam</div>
+                <div className="grid grid-cols-3 gap-1.5 pt-1 text-center text-xs">
+                  <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                    <div className="text-[10px] text-[#8ba0b5]">Toplam Ciro ({count} rez)</div>
                     <div className="font-bold text-white mt-0.5">{revenue.toLocaleString('tr-TR')} ₺</div>
                   </div>
-                  <div className="bg-black/20 p-1.5 rounded border border-white/5">
-                    <div className="text-[10px] text-[#8ba0b5]">Kapora</div>
-                    <div className="font-bold text-amber-400 mt-0.5">{deposit.toLocaleString('tr-TR')} ₺</div>
+                  <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                    <div className="text-[10px] text-[#8ba0b5]">Gece & Ortalama</div>
+                    <div className="font-bold text-purple-300 mt-0.5">
+                      {nights} Gece
+                      <span className="text-[10px] block text-purple-200/80 font-normal">
+                        ({avgPrice.toLocaleString('tr-TR')} ₺/gece)
+                      </span>
+                    </div>
                   </div>
-                  <div className="bg-black/20 p-1.5 rounded border border-white/5">
-                    <div className="text-[10px] text-[#8ba0b5]">Kalan</div>
+                  <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                    <div className="text-[10px] text-[#8ba0b5]">Kalan Alacak</div>
                     <div className="font-bold text-emerald-400 mt-0.5">{remaining.toLocaleString('tr-TR')} ₺</div>
                   </div>
                 </div>
@@ -417,7 +584,6 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
                   <th className="py-3 px-3">Tarihler</th>
                   <th className="py-3 px-3">Fiyat Tipi</th>
                   <th className="py-3 px-3 text-right">Toplam Tutar</th>
-                  <th className="py-3 px-3 text-right">Kapora</th>
                   <th className="py-3 px-3 text-right">Kalan Alacak</th>
                   <th className="py-3 px-3 text-center">Durum</th>
                 </tr>
@@ -454,9 +620,6 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
                       </td>
                       <td className="py-3 px-3 text-right font-bold text-white">
                         {totalAmount.toLocaleString('tr-TR')} TL
-                      </td>
-                      <td className="py-3 px-3 text-right font-semibold text-amber-400">
-                        {deposit.toLocaleString('tr-TR')} TL
                       </td>
                       <td className="py-3 px-3 text-right font-bold text-emerald-400">
                         {remaining.toLocaleString('tr-TR')} TL

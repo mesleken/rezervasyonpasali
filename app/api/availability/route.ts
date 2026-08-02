@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Çıkış tarihi giriş tarihinden sonra olmalıdır.' }, { status: 400 })
   }
 
-  // Bu tarihlerde DOLU olan birim ID'lerini bul
+  // Bu tarihlerde DOLU olan birim ID'lerini bul (Aktif, Kapora Bekleyen veya Ödemesi Tamamlanmış)
   const { data: busyReservations } = await supabase
     .from('reservations')
     .select('unit_id')
-    .in('status', ['active', 'pending'])
+    .in('status', ['active', 'pending', 'completed'])
     .lt('check_in', checkOut)
     .gt('check_out', checkIn)
 

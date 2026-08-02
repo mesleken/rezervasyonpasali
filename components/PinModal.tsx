@@ -38,9 +38,6 @@ export default function PinModal({ isOpen, onClose, onSuccess }: Props) {
     if (e) e.preventDefault()
     const savedPin = getSavedPin()
     if (pin.trim() === savedPin) {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('pasali_finance_auth', 'true')
-      }
       onSuccess()
     } else {
       setError(true)

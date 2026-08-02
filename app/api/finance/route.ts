@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
     revenue: number
     deposit: number
     remaining: number
+    nights: number
   }> = {}
 
   list.forEach(r => {
@@ -81,7 +82,8 @@ export async function GET(req: NextRequest) {
         count: 0,
         revenue: 0,
         deposit: 0,
-        remaining: 0
+        remaining: 0,
+        nights: 0
       }
     }
 
@@ -89,6 +91,7 @@ export async function GET(req: NextRequest) {
     categoryStats[catSlug].revenue += totalAmount
     categoryStats[catSlug].deposit += deposit
     categoryStats[catSlug].remaining += rem
+    categoryStats[catSlug].nights += nights
   })
 
   return NextResponse.json({

@@ -39,6 +39,9 @@ export default function HomePage() {
   // Tüm veritabanı birimleri (gerçek id eşleştirmeleri için)
   const [allUnits, setAllUnits] = useState<Unit[]>([])
 
+  // Aylık Kategori Doluluk Oranları (%)
+  const [occupancyMap, setOccupancyMap] = useState<Record<string, number>>({})
+
   useEffect(() => {
     fetch('/api/units')
       .then(res => res.json())
@@ -47,6 +50,70 @@ export default function HomePage() {
       })
       .catch(console.error)
   }, [])
+
+  // Seçili ay için kategori bazlı doluluk oranı hesapla
+  const fetchMonthlyOccupancy = useCallback(() => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth() + 1
+    const daysInMonth = new Date(year, month, 0).getDate()
+    
+    // Ay sınırları
+    const monthStart = new Date(year, month - 1, 1).getTime()
+    const monthEnd = new Date(year, month - 1, daysInMonth, 23, 59, 59).getTime()
+
+    fetch(`/api/reservations?year=${year}&month=${month}&t=${Date.now()}`)
+      .then(res => res.json())
+      .then(json => {
+        if (!json.data) return
+        const resList: Reservation[] = json.data
+        const occMap: Record<string, number> = {}
+
+        CATEGORIES.forEach(cat => {
+          const catUnitCount = cat.count
+          const totalCatCapacity = catUnitCount * daysInMonth
+          let totalBookedNights = 0
+
+          resList.forEach(r => {
+            // Birim ve kategori eşlemesi (r.unit yoksa allUnits'den bul)
+            const unitObj = r.unit || allUnits.find(u => u.id === r.unit_id)
+            const rCatSlug = unitObj?.category?.slug
+
+            if (rCatSlug === cat.slug) {
+              const checkInTime = new Date(r.check_in + 'T12:00:00').getTime()
+              const checkOutTime = new Date(r.check_out + 'T12:00:00').getTime()
+
+              // Ay sınırlarına kırp
+              const effectiveStart = Math.max(checkInTime, monthStart)
+              const effectiveEnd = Math.min(checkOutTime, monthEnd + 1000 * 3600 * 12)
+
+              if (effectiveEnd > effectiveStart) {
+                const diffNights = Math.ceil((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24))
+                totalBookedNights += diffNights
+              }
+            }
+          })
+
+          const rate = totalCatCapacity > 0
+            ? Math.min(100, Math.round((totalBookedNights / totalCatCapacity) * 100))
+            : 0
+          occMap[cat.slug] = rate
+        })
+
+        setOccupancyMap(occMap)
+      })
+      .catch(console.error)
+  }, [currentDate, allUnits])
+
+  useEffect(() => {
+    fetchMonthlyOccupancy()
+  }, [fetchMonthlyOccupancy])
+
+  // Rezervasyon ekleme, silme, güncelleme ve takvim yenileme işlemi
+  function refreshCalendar() {
+    const fn = (window as Window & { __refreshCalendar?: () => void }).__refreshCalendar
+    if (fn) fn()
+    fetchMonthlyOccupancy()
+  }
 
   // Rezervasyon modalı
   const [modalOpen, setModalOpen] = useState(false)
@@ -73,11 +140,6 @@ export default function HomePage() {
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
-  }
-
-  function refreshCalendar() {
-    const fn = (window as Window & { __refreshCalendar?: () => void }).__refreshCalendar
-    if (fn) fn()
   }
 
   // Müsaitlik barından birim seçilince
@@ -297,9 +359,8 @@ export default function HomePage() {
             {/* Kilitli Finans Raporları Butonu */}
             <button
               onClick={() => {
-                const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('pasali_finance_auth') === 'true'
-                if (isAuth) {
-                  setViewMode(prev => prev === 'finance' ? 'calendar' : 'finance')
+                if (viewMode === 'finance') {
+                  setViewMode('calendar')
                 } else {
                   setPinModalOpen(true)
                 }
@@ -325,13 +386,7 @@ export default function HomePage() {
         {viewMode === 'finance' ? (
           <FinanceDashboard
             onBack={() => setViewMode('calendar')}
-            onLogout={() => {
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('pasali_finance_auth')
-              }
-              setViewMode('calendar')
-              showToast('Finans modülü kilitlendi. 🔒')
-            }}
+            onLogout={() => setViewMode('calendar')}
           />
         ) : (
           <>
@@ -339,7 +394,7 @@ export default function HomePage() {
             <AvailabilityBar onSelectUnit={handleAvailabilitySelect} />
 
             {/* Sekme Navigasyonu */}
-            <TabNavigation active={activeCategory} onChange={setActiveCategory} />
+            <TabNavigation active={activeCategory} onChange={setActiveCategory} occupancyMap={occupancyMap} />
 
             {/* FullCalendar Resource Timeline */}
             <CalendarView

@@ -6,13 +6,16 @@ import type { CategorySlug } from '@/types'
 interface Props {
   active: CategorySlug
   onChange: (slug: CategorySlug) => void
+  occupancyMap?: Record<string, number>
 }
 
-export default function TabNavigation({ active, onChange }: Props) {
+export default function TabNavigation({ active, onChange, occupancyMap }: Props) {
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
       {CATEGORIES.map(cat => {
         const isActive = active === cat.slug
+        const occ = occupancyMap ? occupancyMap[cat.slug] : undefined
+
         return (
           <button
             type="button"
@@ -34,8 +37,19 @@ export default function TabNavigation({ active, onChange }: Props) {
             <span className="text-xl">{cat.icon}</span>
             <div className="text-left">
               <div>{cat.label}</div>
-              <div className={`text-xs font-normal ${isActive ? 'text-[#00b4d8]' : 'text-[#5c748a]'}`}>
-                {cat.count} adet
+              <div className="flex items-center gap-1.5 text-xs font-normal">
+                <span className={isActive ? 'text-[#00b4d8]' : 'text-[#5c748a]'}>
+                  {cat.count} adet
+                </span>
+                {occ !== undefined && (
+                  <span className={`px-1.5 py-0.2 rounded text-[11px] font-bold ${
+                    isActive
+                      ? 'bg-[#00b4d8]/25 text-white border border-[#00b4d8]/40'
+                      : 'bg-white/10 text-[#00b4d8]'
+                  }`}>
+                    %{occ} doluluk
+                  </span>
+                )}
               </div>
             </div>
           </button>
