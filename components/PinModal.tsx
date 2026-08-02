@@ -4,13 +4,15 @@ import { useState, useRef, useEffect } from 'react'
 
 interface Props {
   isOpen: boolean
+  title?: string
+  icon?: string
   onClose: () => void
   onSuccess: () => void
 }
 
 const DEFAULT_PIN = '8620'
 
-export default function PinModal({ isOpen, onClose, onSuccess }: Props) {
+export default function PinModal({ isOpen, title = 'Yönetici Girişi', icon = '🔒', onClose, onSuccess }: Props) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
   const [shake, setShake] = useState(false)
@@ -65,11 +67,11 @@ export default function PinModal({ isOpen, onClose, onSuccess }: Props) {
           {/* İkon & Başlık */}
           <div className="space-y-2">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00b4d8]/20 to-[#2a9d8f]/20 border border-[#00b4d8]/30 flex items-center justify-center text-3xl mx-auto shadow-lg shadow-cyan-950/50">
-              🔒
+              {icon}
             </div>
-            <h3 className="font-display font-bold text-xl text-white">Yönetici Finans Girişi</h3>
+            <h3 className="font-display font-bold text-xl text-white">{title}</h3>
             <p className="text-xs text-[#8ba0b5]">
-              Finansal raporları görüntülemek için lütfen 4 haneli PIN kodunuzu girin.
+              Devam etmek için lütfen 4 haneli PIN kodunuzu girin.
             </p>
           </div>
 

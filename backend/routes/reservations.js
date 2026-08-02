@@ -32,9 +32,10 @@ router.get('/', async (req, res) => {
     if (month && year) {
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
       // Ayın son günü
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+      const lastDay = new Date(Number(year), Number(month), 0).getDate();
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
       params.push(startDate, endDate);
-      query += ` AND check_in <= $${params.length} AND check_out >= $${params.length - 1}`;
+      query += ` AND check_in <= ${params.length} AND check_out >= ${params.length - 1}`;
     }
 
     query += ' ORDER BY check_in ASC';
@@ -63,13 +64,13 @@ router.get('/calendar', async (req, res) => {
 
     const query = `
       SELECT id, item_type, unit_number, guest_name, phone, tc_no, guest_count,
-             TO_CHAR(check_in, 'YYYY-MM-DD') as check_in, 
+             TO_CHAR(check_in, 'YYYY-MM-DD') as check_in,
              TO_CHAR(check_out, 'YYYY-MM-DD') as check_out,
              price_per_night, total_price, notes, status
       FROM reservations
-      WHERE item_type = $1 
+      WHERE item_type = $1
         AND status = 'active'
-        AND check_in < $3 
+        AND check_in < $3
         AND check_out > $2
       ORDER BY unit_number, check_in
     `;
@@ -86,7 +87,7 @@ router.get('/calendar', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Bugünkü toplam aktif doluluk
     const todayOccupiedQuery = `
       SELECT COUNT(DISTINCT (item_type || '_' || unit_number)) as occupied_count,
@@ -95,7 +96,7 @@ router.get('/stats', async (req, res) => {
       WHERE status = 'active'
         AND check_in <= $1 AND check_out > $1
     `;
-    
+
     // Toplam rezervasyon sayısı ve bu ayki toplam ciro
     const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
     const totalStatsQuery = `
@@ -157,10 +158,10 @@ router.post('/', async (req, res) => {
 
     // Yazılım Seviyesinde Çakışma Kontrolü (Güvenlik ağı)
     const overlapCheckQuery = `
-      SELECT id, guest_name, TO_CHAR(check_in, 'YYYY-MM-DD') as check_in, TO_CHAR(check_out, 'YYYY-MM-DD') as check_out 
+      SELECT id, guest_name, TO_CHAR(check_in, 'YYYY-MM-DD') as check_in, TO_CHAR(check_out, 'YYYY-MM-DD') as check_out
       FROM reservations
-      WHERE item_type = $1 
-        AND unit_number = $2 
+      WHERE item_type = $1
+        AND unit_number = $2
         AND status = 'active'
         AND (check_in < $4 AND check_out > $3)
     `;
@@ -176,7 +177,7 @@ router.post('/', async (req, res) => {
 
     // Kaydetme işlemi
     const insertQuery = `
-      INSERT INTO reservations 
+      INSERT INTO reservations
         (item_type, unit_number, guest_name, phone, tc_no, guest_count, check_in, check_out, price_per_night, total_price, notes, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
       RETURNING *, TO_CHAR(check_in, 'YYYY-MM-DD') as check_in, TO_CHAR(check_out, 'YYYY-MM-DD') as check_out

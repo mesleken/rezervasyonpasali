@@ -21,9 +21,12 @@ export function formatDateShort(dateStr: string): string {
 
 /** "2026-08-10" ve "2026-08-13" → "3 gece" */
 export function calcNights(checkIn: string, checkOut: string): number {
+  if (!checkIn || !checkOut) return 0
   const d1 = new Date(checkIn)
   const d2 = new Date(checkOut)
-  return Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24))
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0
+  const diff = Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 3600 * 24))
+  return diff > 0 ? diff : 0
 }
 
 /** Bugünün tarihini "YYYY-MM-DD" formatında döndür */
@@ -51,4 +54,15 @@ export function formatDateWithDayTR(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
   if (isNaN(d.getTime())) return dateStr
   return `${d.getDate()} ${TR_MONTHS[d.getMonth()]} ${d.getFullYear()}, ${TR_DAYS[d.getDay()]}`
+}
+
+/** Ay ve yıl bilgisinden başlangıç ve bitiş tarihlerini ("YYYY-MM-DD") hesapla */
+export function getMonthDateRange(year: number | string, month: number | string): { monthStart: string; monthEnd: string } {
+  const y = Number(year)
+  const m = Number(month)
+  const mStr = String(m).padStart(2, '0')
+  const daysInMonth = new Date(y, m, 0).getDate()
+  const monthStart = `${y}-${mStr}-01`
+  const monthEnd = `${y}-${mStr}-${String(daysInMonth).padStart(2, '0')}`
+  return { monthStart, monthEnd }
 }

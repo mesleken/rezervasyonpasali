@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { getMonthDateRange } from '@/lib/dateUtils'
 
 // GET /api/reservations?categorySlug=bungalov&year=2026&month=8
 // Belirli ay ve kategorideki tüm aktif/pending rezervasyonları döner
@@ -34,8 +35,7 @@ export async function GET(req: NextRequest) {
         .from('units')
         .select('id')
         .eq('category_id', cat.id)
-        .eq('is_active', true)
-      
+
       const unitIds = (units || []).map((u: { id: number }) => u.id)
       if (unitIds.length > 0) {
         query = query.in('unit_id', unitIds)
@@ -46,15 +46,15 @@ export async function GET(req: NextRequest) {
   }
 
   if (year && month) {
-    const m = month.padStart(2, '0')
-    const daysInMonth = new Date(Number(year), Number(month), 0).getDate()
-    const monthStart = `${year}-${m}-01`
-    const monthEnd = `${year}-${m}-${String(daysInMonth).padStart(2, '0')}`
+    const { monthStart, monthEnd } = getMonthDateRange(year, month)
     query = query.lte('check_in', monthEnd).gte('check_out', monthStart)
   }
 
   if (search) {
-    query = query.or(`guest_name.ilike.%${search}%,phone.ilike.%${search}%`)
+    const cleanSearch = search.replace(/[,%()]/g, '')
+    if (cleanSearch) {
+      query = query.or(`guest_name.ilike.%${cleanSearch}%,phone.ilike.%${cleanSearch}%`)
+    }
   }
 
   const { data, error } = await query
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
     .from('reservations')
     .select('id, guest_name, check_in, check_out')
     .eq('unit_id', unit_id)
-    .in('status', ['active', 'pending'])
+    .in('status', ['active', 'pending', 'completed', 'maintenance'])
     .lt('check_in', check_out)
     .gt('check_out', check_in)
 

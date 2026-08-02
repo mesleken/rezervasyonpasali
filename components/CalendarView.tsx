@@ -20,6 +20,7 @@ export default function CalendarView({
   categorySlug, currentDate, rangeMode = 'month', onDateRangeSelect, onEventClick
 }: Props) {
   const calendarRef = useRef<FullCalendar>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [resources, setResources] = useState<CalendarResource[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(false)
@@ -60,18 +61,22 @@ export default function CalendarView({
       const json = JSON.parse(text)
       if (!res.ok) throw new Error(json.error || 'İstek başarısız')
 
-      // Dolu rezervasyonlar
+      // Dolu rezervasyonlar & Bakım modları
       const busyEvts: CalendarEvent[] = (json.data || []).map((r: Reservation) => {
-        const colors = STATUS_COLORS[r.status as ReservationStatus] || STATUS_COLORS.active
+        const isMaintenance = r.status === 'maintenance' || r.guest_name?.toUpperCase().includes('BAKIM')
+        const colors = isMaintenance
+          ? { bg: '#8e44ad', border: '#9b59b6', text: '#ffffff' }
+          : (STATUS_COLORS[r.status as ReservationStatus] || STATUS_COLORS.active)
+
         return {
           id: r.id,
           resourceId: `${categorySlug}_${r.unit?.unit_number}`,
-          title: r.guest_name + (r.phone ? ` · ${r.phone}` : ''),
+          title: isMaintenance ? '🔧 BAKIMDA' : r.guest_name + (r.phone ? ` · ${r.phone}` : ''),
           start: `${r.check_in}T12:00:00`,
           end: `${r.check_out}T00:00:00`,
           backgroundColor: colors.bg,
           borderColor: colors.border,
-          extendedProps: { reservation: r, status: r.status },
+          extendedProps: { reservation: r, status: isMaintenance ? 'maintenance' : r.status },
         }
       })
 
@@ -167,6 +172,40 @@ export default function CalendarView({
     }
   }, [loadReservations])
 
+  // JS Kaydırma Senkronizasyonu — Sadece Masaüstü için (Mobilde CSS ile çözülüyor)
+  useEffect(() => {
+    if (!isMounted) return
+    // Mobilde CSS overflow:hidden ile iç scrollerlar devre dışı — JS sync gerekmez
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return
+
+    let cleanup: (() => void) | null = null
+
+    const syncScrollers = () => {
+      const el = containerRef.current
+      if (!el) return
+
+      // FullCalendar’ın timeline header ve body scroller’larını bul
+      // FC yapısı: .fc-scrollgrid-section-header .fc-scroller ve .fc-scrollgrid-section-body .fc-scroller
+      const headerRow = el.querySelector<HTMLElement>('.fc-scrollgrid-section-header .fc-scroller, .fc-scrollgrid-section.fc-scrollgrid-section-header .fc-scroller')
+      const bodyRow = el.querySelector<HTMLElement>('.fc-scrollgrid-section-body .fc-scroller-harness .fc-scroller, .fc-scrollgrid-section:not(.fc-scrollgrid-section-header) .fc-scroller')
+
+      const h = headerRow
+      const b = bodyRow
+      if (!h || !b) return
+
+      let syncing = false
+      const onH = () => { if (!syncing) { syncing = true; b.scrollLeft = h.scrollLeft; syncing = false } }
+      const onB = () => { if (!syncing) { syncing = true; h.scrollLeft = b.scrollLeft; syncing = false } }
+
+      h.addEventListener('scroll', onH, { passive: true })
+      b.addEventListener('scroll', onB, { passive: true })
+      cleanup = () => { h.removeEventListener('scroll', onH); b.removeEventListener('scroll', onB) }
+    }
+
+    const timer = setTimeout(syncScrollers, 400)
+    return () => { clearTimeout(timer); cleanup?.() }
+  }, [isMounted, rangeMode, resources])
+
   if (!isMounted) {
     return (
       <div className="glass-card flex items-center justify-center h-64 min-h-[350px]">
@@ -176,13 +215,19 @@ export default function CalendarView({
   }
 
   return (
-    <div className="glass-card p-0 overflow-x-auto relative w-full touch-pan-x min-h-[350px]">
+    <div ref={containerRef} className="glass-card p-0 overflow-x-auto relative w-full touch-pan-x min-h-[350px]">
       {loading && (
         <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center rounded-2xl">
           <div className="text-[#00b4d8] text-sm font-semibold animate-pulse">Yükleniyor...</div>
         </div>
       )}
-      <div className={rangeMode === 'week' ? 'w-full min-w-[650px] sm:min-w-full' : 'min-w-[1100px]'}>
+      {/* Mobilde haftalık 900px, aylık 2400px — FC iç scroller devre dışı, dış wrapper kaydırır */}
+      {/* Masaüstünde haftalık 900px, aylık 1100px — CSS media query (globals.css) yönetir */}
+      <div className={
+        rangeMode === 'week'
+          ? 'calendar-range-week'
+          : 'calendar-range-month'
+      }>
         <FullCalendar
           ref={calendarRef}
           plugins={[resourceTimelinePlugin, interactionPlugin]}
@@ -221,7 +266,7 @@ export default function CalendarView({
             if (!unitNumber) return
             const endDate = new Date(info.endStr)
             endDate.setDate(endDate.getDate() - 1) // FullCalendar end exclusive
-            onDateRangeSelect(info.resource!.id as unknown as number, info.startStr, endDate.toISOString().split('T')[0])
+            onDateRangeSelect(unitNumber, info.startStr, endDate.toISOString().split('T')[0])
           }}
           // Mevcut rezervasyona veya yeşil boş bara tıklama
           eventClick={(info) => {

@@ -111,6 +111,38 @@
   border-spacing: 0 !important;
 }
 
+/* Kaydırma Senkronizasyonu JS tarafında ve CSS ile yönetilmektedir. */
+/* Masaüstü Takvim Genişlik Kuralları */
+.calendar-range-month {
+  min-width: 1100px;
+}
+.calendar-range-week {
+  min-width: 900px;
+}
+
+/* Sadece Telefon / Mobil Ekranlar (< 768px) */
+@media (max-width: 767px) {
+  .calendar-range-month {
+    min-width: 2400px !important;
+  }
+  .calendar-range-week {
+    min-width: 900px !important;
+  }
+
+  /* FullCalendar iç scroller'larının x/y overflow'unu kapatıp dış wrapper'ın (containerRef) tek parçada kaymasını sağlıyoruz. */
+  /* Böylece tarih başlıkları ile doluluk/müsaitlik barları %100 senkronize kaysın, sapma/kayma olmasın. */
+  .fc .fc-scroller,
+  .fc .fc-scroller-harness,
+  .fc-scrollgrid-section-header .fc-scroller,
+  .fc-scrollgrid-section-body .fc-scroller,
+  .fc-scroller-liquid-absolute {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    height: auto !important;
+  }
+}
+
+
 /* Sol Birim İsimleri Sütununun Kesin Sabit (Sticky) Kalması */
 .fc-timeline .fc-resource-area,
 .fc-timeline .fc-resource-area th,
@@ -166,6 +198,16 @@ td.fc-resource-area,
   transition: all 0.2s ease !important;
 }
 
+/* Sadece Masaüstü (PC) Ekranlarda Haftalık Modda Barları Sağa Kaydırma */
+@media (min-width: 768px) {
+  .calendar-range-week .fc-timeline-event {
+    transform: translateX(95px) skewX(-28deg) !important;
+  }
+  .calendar-range-week .fc-timeline-event:hover {
+    transform: translateX(95px) skewX(-28deg) scaleY(1.08) !important;
+  }
+}
+
 /* Metinlerin cam gibi net (crisp) görünmesi, dik durması ve BARIN TAM ORTASINA HİZALANMASI */
 .fc-event-main {
   transform: skewX(28deg) !important;
@@ -197,7 +239,6 @@ td.fc-resource-area,
 }
 
 .fc-event:hover {
-  transform: translateX(32px) skewX(-28deg) scaleY(1.08) !important;
   filter: brightness(1.15) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
   z-index: 10 !important;

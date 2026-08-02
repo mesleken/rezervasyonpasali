@@ -146,6 +146,7 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
 
   // PIN Değiştirme Modalı
   const [showPinChange, setShowPinChange] = useState(false)
+  const [masterPin, setMasterPin] = useState('')
   const [newPin, setNewPin] = useState('')
   const [pinChangeMsg, setPinChangeMsg] = useState('')
 
@@ -267,14 +268,19 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
   // PIN Değiştirme
   function handleChangePin(e: React.FormEvent) {
     e.preventDefault()
+    if (masterPin.trim() !== '2205') {
+      setPinChangeMsg('⚠️ Hatalı Yönetici Doğrulama Şifresi!')
+      return
+    }
     if (newPin.length !== 4) {
-      setPinChangeMsg('PIN 4 haneli sayı olmalıdır.')
+      setPinChangeMsg('Yeni PIN 4 haneli sayı olmalıdır.')
       return
     }
     localStorage.setItem('pasali_admin_pin', newPin)
-    setPinChangeMsg('✅ PIN Kodu başarıyla güncellendi!')
+    setPinChangeMsg('✅ Giriş PIN Kodu başarıyla güncellendi!')
     setTimeout(() => {
       setShowPinChange(false)
+      setMasterPin('')
       setNewPin('')
       setPinChangeMsg('')
     }, 1500)
@@ -657,19 +663,37 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
             <h3 className="font-bold text-lg text-white text-center">🔑 Yönetici PIN Kodunu Değiştir</h3>
             <form onSubmit={handleChangePin} className="space-y-3">
               <div>
-                <label className="block text-xs text-[#8ba0b5] mb-1">Yeni 4 Haneli PIN Kodu</label>
+                <label className="block text-xs font-semibold text-amber-300 mb-1">
+                  Yönetici Doğrulama Şifresi
+                </label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={masterPin}
+                  onChange={e => setMasterPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="••••"
+                  className="form-input text-center font-mono text-xl tracking-[0.4em] border-amber-500/40 focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#8ba0b5] mb-1">Yeni 4 Haneli Giriş PIN Kodu</label>
                 <input
                   type="password"
                   maxLength={4}
                   value={newPin}
                   onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
                   placeholder="Örn: 8620"
-                  className="form-input text-center font-mono text-2xl tracking-[0.4em]"
+                  className="form-input text-center font-mono text-xl tracking-[0.4em]"
                 />
               </div>
 
               {pinChangeMsg && (
-                <div className="text-xs text-center font-bold text-emerald-400 bg-emerald-950/40 p-2 rounded border border-emerald-500/30">
+                <div className={`text-xs text-center font-bold p-2.5 rounded border ${
+                  pinChangeMsg.includes('✅')
+                    ? 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30'
+                    : 'text-red-400 bg-red-950/40 border-red-500/30'
+                }`}>
                   {pinChangeMsg}
                 </div>
               )}
@@ -677,14 +701,19 @@ export default function FinanceDashboard({ onBack, onLogout }: Props) {
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowPinChange(false)}
+                  onClick={() => {
+                    setShowPinChange(false)
+                    setMasterPin('')
+                    setNewPin('')
+                    setPinChangeMsg('')
+                  }}
                   className="flex-1 py-2.5 rounded-xl bg-white/5 text-[#8ba0b5] hover:text-white text-xs font-semibold"
                 >
                   Vazgeç
                 </button>
                 <button
                   type="submit"
-                  disabled={newPin.length !== 4}
+                  disabled={newPin.length !== 4 || masterPin.length !== 4}
                   className="flex-1 py-2.5 rounded-xl btn-primary text-xs font-bold"
                 >
                   Kaydet

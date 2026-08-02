@@ -22,19 +22,21 @@ import ReservationDetailDrawer from '@/components/ReservationDetailDrawer'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import PinModal from '@/components/PinModal'
 import FinanceDashboard from '@/components/FinanceDashboard'
+import ManagementDashboard from '@/components/ManagementDashboard'
 
 export default function HomePage() {
   // Sekme durumu
   const [activeCategory, setActiveCategory] = useState<CategorySlug>('bungalov')
 
-  // Ana görünüm modu ('calendar' | 'finance')
-  const [viewMode, setViewMode] = useState<'calendar' | 'finance'>('calendar')
+  // Ana görünüm modu ('calendar' | 'finance' | 'management')
+  const [viewMode, setViewMode] = useState<'calendar' | 'finance' | 'management'>('calendar')
 
   // Takvim görünüm aralığı ('week' | 'month') — varsayılan olarak mobil uyumlu 7 Gün (Haftalık)
   const [calendarRangeMode, setCalendarRangeMode] = useState<'week' | 'month'>('week')
 
-  // PIN Kodu Modalı durumu
+  // PIN Kodu Modalı durumu & Hedef mod
   const [pinModalOpen, setPinModalOpen] = useState(false)
+  const [targetPinTarget, setTargetPinTarget] = useState<'finance' | 'management'>('finance')
 
   // Takvim tarih durumu
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -353,17 +355,19 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Yönetici Finans Butonu */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Yönetici Butonları (Finans & Yönetim) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Kilitli Finans Raporları Butonu */}
             <button
               onClick={() => {
                 if (viewMode === 'finance') {
                   setViewMode('calendar')
                 } else {
+                  setTargetPinTarget('finance')
                   setPinModalOpen(true)
                 }
               }}
-              className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
                 viewMode === 'finance'
                   ? 'bg-[#00b4d8] text-white border-[#00b4d8] shadow-lg shadow-cyan-950/50'
                   : 'bg-gradient-to-r from-amber-500/20 to-cyan-500/20 border-amber-500/30 text-amber-300 hover:border-amber-400'
@@ -371,6 +375,26 @@ export default function HomePage() {
             >
               <span>🔒</span>
               <span>{viewMode === 'finance' ? 'Takvim' : 'Finans'}</span>
+            </button>
+
+            {/* Kilitli Tesis Yönetim Butonu */}
+            <button
+              onClick={() => {
+                if (viewMode === 'management') {
+                  setViewMode('calendar')
+                } else {
+                  setTargetPinTarget('management')
+                  setPinModalOpen(true)
+                }
+              }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
+                viewMode === 'management'
+                  ? 'bg-[#00b4d8] text-white border-[#00b4d8] shadow-lg shadow-cyan-950/50'
+                  : 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 text-emerald-300 hover:border-emerald-400'
+              }`}
+            >
+              <span>⚙️</span>
+              <span>{viewMode === 'management' ? 'Takvim' : 'Yönetim'}</span>
             </button>
           </div>
         </div>
@@ -383,6 +407,11 @@ export default function HomePage() {
 
         {viewMode === 'finance' ? (
           <FinanceDashboard
+            onBack={() => setViewMode('calendar')}
+            onLogout={() => setViewMode('calendar')}
+          />
+        ) : viewMode === 'management' ? (
+          <ManagementDashboard
             onBack={() => setViewMode('calendar')}
             onLogout={() => setViewMode('calendar')}
           />
@@ -517,11 +546,13 @@ export default function HomePage() {
       {/* PIN Kodu Doğrulama Modalı */}
       <PinModal
         isOpen={pinModalOpen}
+        title={targetPinTarget === 'finance' ? 'Finans Paneli Girişi' : 'Tesis Yönetim Girişi'}
+        icon={targetPinTarget === 'finance' ? '📊' : '⚙️'}
         onClose={() => setPinModalOpen(false)}
         onSuccess={() => {
           setPinModalOpen(false)
-          setViewMode('finance')
-          showToast('Finans modülü başarıyla açıldı! 🔑')
+          setViewMode(targetPinTarget)
+          showToast(targetPinTarget === 'finance' ? 'Finans paneli açıldı! 🔑' : 'Yönetim paneli açıldı! ⚙️')
         }}
       />
 

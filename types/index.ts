@@ -25,7 +25,7 @@ export interface Unit {
   category?: Category
 }
 
-export type ReservationStatus = 'active' | 'pending' | 'completed' | 'cancelled'
+export type ReservationStatus = 'active' | 'pending' | 'completed' | 'cancelled' | 'maintenance'
 
 export interface Reservation {
   id: string
@@ -113,8 +113,9 @@ export const TOTAL_UNITS = CATEGORIES.reduce((sum, c) => sum + c.count, 0)
 
 // Durum renkleri
 export const STATUS_COLORS: Record<ReservationStatus, { bg: string; border: string; text: string }> = {
-  active:    { bg: '#c0392b', border: '#e74c3c', text: '#ffffff' },
-  pending:   { bg: '#e67e22', border: '#f4a261', text: '#ffffff' },
-  completed: { bg: '#2980b9', border: '#3498db', text: '#ffffff' },
-  cancelled: { bg: '#555555', border: '#777777', text: '#aaaaaa' },
+  active:      { bg: '#c0392b', border: '#e74c3c', text: '#ffffff' },
+  pending:     { bg: '#e67e22', border: '#f4a261', text: '#ffffff' },
+  completed:   { bg: '#2980b9', border: '#3498db', text: '#ffffff' },
+  cancelled:   { bg: '#555555', border: '#777777', text: '#aaaaaa' },
+  maintenance: { bg: '#8e44ad', border: '#9b59b6', text: '#ffffff' },
 }

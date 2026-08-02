@@ -9,7 +9,6 @@ export async function GET() {
       id, unit_number, label, is_active, category_id,
       category:categories(id, slug, label, icon, sort_order)
     `)
-    .eq('is_active', true)
     .order('category_id')
     .order('unit_number')
 

@@ -18,6 +18,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: '⏳ Kapora Bekleniyor',
   completed: '🎉 Ödeme Tamamlandı (Arşivlendi)',
   cancelled: '❌ İptal Edildi',
+  maintenance: '🔧 Bakım Modunda (Devre Dışı)',
 }
 
 export default function ReservationDetailDrawer({
