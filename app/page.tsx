@@ -30,6 +30,9 @@ export default function HomePage() {
   // Ana görünüm modu ('calendar' | 'finance')
   const [viewMode, setViewMode] = useState<'calendar' | 'finance'>('calendar')
 
+  // Takvim görünüm aralığı ('week' | 'month') — varsayılan olarak mobil uyumlu 7 Gün (Haftalık)
+  const [calendarRangeMode, setCalendarRangeMode] = useState<'week' | 'month'>('week')
+
   // PIN Kodu Modalı durumu
   const [pinModalOpen, setPinModalOpen] = useState(false)
 
@@ -294,16 +297,36 @@ export default function HomePage() {
     }
   }
 
-  // Ay navigasyonu
-  function goMonth(offset: number) {
+  // Tarih / Ay / Hafta navigasyonu
+  function goDate(offset: number) {
     setCurrentDate(prev => {
       const d = new Date(prev)
-      d.setMonth(d.getMonth() + offset)
+      if (calendarRangeMode === 'week') {
+        d.setDate(d.getDate() + (offset * 7)) // 7 gün ileri/geri
+      } else {
+        d.setMonth(d.getMonth() + offset) // 1 ay ileri/geri
+      }
       return d
     })
   }
 
-  const monthLabel = `${monthNameTR(currentDate.getMonth())} ${currentDate.getFullYear()}`
+  // Dinamik Tarih Başlığı (Aylık vs 7 Günlük Haftalık)
+  const dateLabel = (() => {
+    if (calendarRangeMode === 'month') {
+      return `${monthNameTR(currentDate.getMonth())} ${currentDate.getFullYear()}`
+    } else {
+      const d1 = new Date(currentDate)
+      const d2 = new Date(currentDate)
+      d2.setDate(d2.getDate() + 6)
+      const m1 = monthNameTR(d1.getMonth()).slice(0, 3)
+      const m2 = monthNameTR(d2.getMonth()).slice(0, 3)
+      if (d1.getMonth() === d2.getMonth()) {
+        return `${d1.getDate()} - ${d2.getDate()} ${monthNameTR(d1.getMonth())}`
+      } else {
+        return `${d1.getDate()} ${m1} - ${d2.getDate()} ${m2}`
+      }
+    }
+  })()
 
   return (
     <div className="min-h-dvh flex flex-col overflow-x-hidden w-full max-w-[100vw]">
@@ -330,33 +353,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Ay Navigasyonu + Yönetici Finans Butonu */}
+          {/* Yönetici Finans Butonu */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            {viewMode === 'calendar' && (
-              <>
-                <button
-                  onClick={() => goMonth(-1)}
-                  className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
-                  aria-label="Önceki Ay"
-                >‹</button>
-                <span className="font-display font-bold text-xs sm:text-base min-w-[95px] sm:min-w-[150px] text-center text-white truncate px-0.5">
-                  {monthLabel}
-                </span>
-                <button
-                  onClick={() => goMonth(1)}
-                  className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
-                  aria-label="Sonraki Ay"
-                >›</button>
-                <button
-                  onClick={() => setCurrentDate(new Date())}
-                  className="btn-ghost px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shrink-0 touch-target"
-                >
-                  Bugün
-                </button>
-              </>
-            )}
-
-            {/* Kilitli Finans Raporları Butonu */}
             <button
               onClick={() => {
                 if (viewMode === 'finance') {
@@ -396,11 +394,64 @@ export default function HomePage() {
             {/* Sekme Navigasyonu */}
             <TabNavigation active={activeCategory} onChange={setActiveCategory} occupancyMap={occupancyMap} />
 
+            {/* Takvim Kontrol Barı (Haftalık/Aylık Mod & Tarih Navigasyonu) */}
+            <div className="glass-card p-3 flex flex-wrap items-center justify-between gap-3 border border-[#00b4d8]/20">
+              {/* Sol Taraf: Haftalık / Aylık Mod Seçici */}
+              <div className="flex items-center gap-1 bg-[#07111e] border border-white/10 p-1 rounded-xl shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setCalendarRangeMode('week')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all touch-target ${
+                    calendarRangeMode === 'week'
+                      ? 'bg-[#00b4d8] text-white shadow-md shadow-cyan-950/50'
+                      : 'text-[#8ba0b5] hover:text-white'
+                  }`}
+                >
+                  📱 Haftalık
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarRangeMode('month')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all touch-target ${
+                    calendarRangeMode === 'month'
+                      ? 'bg-[#00b4d8] text-white shadow-md shadow-cyan-950/50'
+                      : 'text-[#8ba0b5] hover:text-white'
+                  }`}
+                >
+                  🗓️ Aylık
+                </button>
+              </div>
+
+              {/* Sağ Taraf: Tarih / Hafta Navigasyonu (‹ Tarih › Bugün) */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <button
+                  onClick={() => goDate(-1)}
+                  className="btn-ghost w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target font-bold"
+                  aria-label={calendarRangeMode === 'week' ? 'Önceki Hafta' : 'Önceki Ay'}
+                >‹</button>
+                <span className="font-display font-bold text-xs sm:text-sm min-w-[110px] sm:min-w-[150px] text-center text-white truncate px-1">
+                  {dateLabel}
+                </span>
+                <button
+                  onClick={() => goDate(1)}
+                  className="btn-ghost w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target font-bold"
+                  aria-label={calendarRangeMode === 'week' ? 'Sonraki Hafta' : 'Sonraki Ay'}
+                >›</button>
+                <button
+                  onClick={() => setCurrentDate(new Date())}
+                  className="btn-ghost px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold shrink-0 touch-target"
+                >
+                  Bugün
+                </button>
+              </div>
+            </div>
+
             {/* FullCalendar Resource Timeline */}
             <CalendarView
-              key={activeCategory} // Sekme değişince yeniden mount et
+              key={`${activeCategory}_${calendarRangeMode}`} // Mod veya Sekme değişince yeniden mount et
               categorySlug={activeCategory}
               currentDate={currentDate}
+              rangeMode={calendarRangeMode}
               onDateRangeSelect={handleDateRangeSelect}
               onEventClick={handleEventClick}
             />

@@ -11,12 +11,13 @@ import type { CategorySlug } from '@/types'
 interface Props {
   categorySlug: CategorySlug
   currentDate: Date
+  rangeMode?: 'week' | 'month'
   onDateRangeSelect: (unitId: number, start: string, end: string) => void
   onEventClick: (reservation: Reservation) => void
 }
 
 export default function CalendarView({
-  categorySlug, currentDate, onDateRangeSelect, onEventClick
+  categorySlug, currentDate, rangeMode = 'month', onDateRangeSelect, onEventClick
 }: Props) {
   const calendarRef = useRef<FullCalendar>(null)
   const [resources, setResources] = useState<CalendarResource[]>([])
@@ -50,7 +51,7 @@ export default function CalendarView({
     const y = currentDate.getFullYear()
     const m = currentDate.getMonth() + 1
     try {
-      const res = await fetch(`/api/reservations?categorySlug=${categorySlug}&year=${y}&month=${m}`)
+      const res = await fetch(`/api/reservations?categorySlug=${categorySlug}&year=${y}&month=${m}&t=${Date.now()}`)
       const text = await res.text()
       if (!text) {
         setEvents([])
@@ -146,12 +147,17 @@ export default function CalendarView({
   useEffect(() => {
     if (calendarRef.current) {
       try {
-        calendarRef.current.getApi().gotoDate(currentDate)
+        const api = calendarRef.current.getApi()
+        api.gotoDate(currentDate)
+        const targetView = rangeMode === 'week' ? 'resourceTimelineSevenDays' : 'resourceTimelineMonth'
+        if (api.view.type !== targetView) {
+          api.changeView(targetView, currentDate)
+        }
       } catch (e) {
         // Ignored if API not ready yet
       }
     }
-  }, [currentDate])
+  }, [currentDate, rangeMode])
 
   // Dışarıdan yenileme için global callback
   useEffect(() => {
@@ -176,20 +182,34 @@ export default function CalendarView({
           <div className="text-[#00b4d8] text-sm font-semibold animate-pulse">Yükleniyor...</div>
         </div>
       )}
-      <div className="min-w-[1100px]">
+      <div className={rangeMode === 'week' ? 'w-full min-w-[650px] sm:min-w-full' : 'min-w-[1100px]'}>
         <FullCalendar
           ref={calendarRef}
           plugins={[resourceTimelinePlugin, interactionPlugin]}
-          initialView="resourceTimelineMonth"
+          initialView={rangeMode === 'week' ? 'resourceTimelineSevenDays' : 'resourceTimelineMonth'}
           initialDate={currentDate}
+          views={{
+            resourceTimelineSevenDays: {
+              type: 'resourceTimeline',
+              duration: { days: 7 },
+              slotDuration: { days: 1 },
+              slotLabelFormat: { day: 'numeric', weekday: 'short' }
+            },
+            resourceTimelineMonth: {
+              type: 'resourceTimeline',
+              duration: { months: 1 },
+              slotDuration: { days: 1 },
+              slotLabelFormat: { day: 'numeric', weekday: 'short' }
+            }
+          }}
           resources={resources}
+          resourceOrder="unitId"
           events={events}
           schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
           headerToolbar={false} // Kendi header'ımızı kullanıyoruz
           resourceAreaHeaderContent={`${categoryConfig.icon} ${categoryConfig.label}`}
           resourceAreaWidth="130px"
           slotDuration={{ days: 1 }}
-          slotLabelFormat={{ day: 'numeric', weekday: 'short' }}
           displayEventTime={false}
           locale="tr"
           height="auto"
