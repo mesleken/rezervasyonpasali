@@ -26,6 +26,7 @@ export default function QuickReservationModal({
   const [priceType, setPriceType] = useState<'daily' | 'total'>('daily')
   const [price, setPrice] = useState<string>('')
   const [deposit, setDeposit] = useState<string>('')
+  const [guestCount, setGuestCount] = useState<number>(2)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -43,6 +44,7 @@ export default function QuickReservationModal({
       setPriceType('daily')
       setPrice('')
       setDeposit('')
+      setGuestCount(2)
       setError(null)
       setTimeout(() => nameRef.current?.focus(), 100)
     } else {
@@ -84,6 +86,7 @@ export default function QuickReservationModal({
       price_type: priceType,
       price: numPrice,
       deposit: numDeposit,
+      guest_count: guestCount,
     })
 
     setSaving(false)
@@ -191,18 +194,31 @@ export default function QuickReservationModal({
               />
             </div>
 
-            {/* Alan 2: Telefon */}
-            <div>
-              <label className="block text-xs text-[#8ba0b5] mb-1.5">📞 Telefon</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="0532 000 00 00"
-                autoComplete="tel"
-                className="form-input"
-                inputMode="tel"
-              />
+            {/* Alan 2: Telefon & Kişi Sayısı */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-[#8ba0b5] mb-1.5">📞 Telefon</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="0532 000 00 00"
+                  autoComplete="tel"
+                  className="form-input"
+                  inputMode="tel"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8ba0b5] mb-1.5">👥 Kişi Sayısı</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={guestCount}
+                  onChange={e => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             {/* Alan 3: Fiyat ve Kapora Yönetimi */}

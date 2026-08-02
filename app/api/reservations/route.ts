@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
 // POST /api/reservations — Yeni rezervasyon oluştur
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  let { unit_id, category_slug, unit_number, guest_name, phone, notes, status, check_in, check_out, price_type, price, deposit } = body
+  let { unit_id, category_slug, unit_number, guest_name, phone, notes, status, check_in, check_out, price_type, price, deposit, guest_count } = body
 
   // Eğer category_slug ve unit_number sağlandıysa veritabanından doğru birim id'sini sorgula
   if (category_slug && unit_number) {
@@ -123,20 +123,26 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const insertData: Record<string, unknown> = {
+    unit_id,
+    guest_name: guest_name.trim(),
+    phone: phone?.trim() || null,
+    notes: notes?.trim() || null,
+    status: status || 'active',
+    check_in,
+    check_out,
+    price_type: price_type || 'daily',
+    price: Number(price) || 0,
+    deposit: Number(deposit) || 0,
+  }
+
+  if (guest_count !== undefined) {
+    insertData.guest_count = Number(guest_count) || 2
+  }
+
   const { data, error } = await supabase
     .from('reservations')
-    .insert({
-      unit_id,
-      guest_name: guest_name.trim(),
-      phone: phone?.trim() || null,
-      notes: notes?.trim() || null,
-      status: status || 'active',
-      check_in,
-      check_out,
-      price_type: price_type || 'daily',
-      price: Number(price) || 0,
-      deposit: Number(deposit) || 0,
-    })
+    .insert(insertData)
     .select()
     .single()
 

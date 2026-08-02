@@ -23,20 +23,21 @@ import ConfirmDialog from '@/components/ConfirmDialog'
 import PinModal from '@/components/PinModal'
 import FinanceDashboard from '@/components/FinanceDashboard'
 import ManagementDashboard from '@/components/ManagementDashboard'
+import TrackingDashboard from '@/components/TrackingDashboard'
 
 export default function HomePage() {
   // Sekme durumu
   const [activeCategory, setActiveCategory] = useState<CategorySlug>('bungalov')
 
-  // Ana görünüm modu ('calendar' | 'finance' | 'management')
-  const [viewMode, setViewMode] = useState<'calendar' | 'finance' | 'management'>('calendar')
+  // Ana görünüm modu ('calendar' | 'finance' | 'management' | 'tracking')
+  const [viewMode, setViewMode] = useState<'calendar' | 'finance' | 'management' | 'tracking'>('calendar')
 
   // Takvim görünüm aralığı ('week' | 'month') — varsayılan olarak mobil uyumlu 7 Gün (Haftalık)
   const [calendarRangeMode, setCalendarRangeMode] = useState<'week' | 'month'>('week')
 
   // PIN Kodu Modalı durumu & Hedef mod
   const [pinModalOpen, setPinModalOpen] = useState(false)
-  const [targetPinTarget, setTargetPinTarget] = useState<'finance' | 'management'>('finance')
+  const [targetPinTarget, setTargetPinTarget] = useState<'finance' | 'management' | 'tracking'>('finance')
 
   // Takvim tarih durumu
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -355,8 +356,28 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Yönetici Butonları (Finans & Yönetim) */}
+          {/* Yönetici Butonları (Takip, Finans & Yönetim) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Kilitli Günlük Takip & Operasyon Butonu */}
+            <button
+              onClick={() => {
+                if (viewMode === 'tracking') {
+                  setViewMode('calendar')
+                } else {
+                  setTargetPinTarget('tracking')
+                  setPinModalOpen(true)
+                }
+              }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
+                viewMode === 'tracking'
+                  ? 'bg-[#00b4d8] text-white border-[#00b4d8] shadow-lg shadow-cyan-950/50'
+                  : 'bg-gradient-to-r from-teal-500/20 to-emerald-500/20 border-teal-500/30 text-teal-300 hover:border-teal-400'
+              }`}
+            >
+              <span>📋</span>
+              <span>{viewMode === 'tracking' ? 'Takvim' : 'Takip'}</span>
+            </button>
+
             {/* Kilitli Finans Raporları Butonu */}
             <button
               onClick={() => {
@@ -405,7 +426,12 @@ export default function HomePage() {
       ============================================================ */}
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-2 sm:px-4 py-4 space-y-4 overflow-x-hidden">
 
-        {viewMode === 'finance' ? (
+        {viewMode === 'tracking' ? (
+          <TrackingDashboard
+            onBack={() => setViewMode('calendar')}
+            onLogout={() => setViewMode('calendar')}
+          />
+        ) : viewMode === 'finance' ? (
           <FinanceDashboard
             onBack={() => setViewMode('calendar')}
             onLogout={() => setViewMode('calendar')}
@@ -566,13 +592,25 @@ export default function HomePage() {
       {/* PIN Kodu Doğrulama Modalı */}
       <PinModal
         isOpen={pinModalOpen}
-        title={targetPinTarget === 'finance' ? 'Finans Paneli Girişi' : 'Tesis Yönetim Girişi'}
-        icon={targetPinTarget === 'finance' ? '📊' : '⚙️'}
+        title={
+          targetPinTarget === 'finance'
+            ? 'Finans Paneli Girişi'
+            : targetPinTarget === 'tracking'
+            ? 'Günlük Takip & Operasyon Girişi'
+            : 'Tesis Yönetim Girişi'
+        }
+        icon={targetPinTarget === 'finance' ? '📊' : targetPinTarget === 'tracking' ? '📋' : '⚙️'}
         onClose={() => setPinModalOpen(false)}
         onSuccess={() => {
           setPinModalOpen(false)
           setViewMode(targetPinTarget)
-          showToast(targetPinTarget === 'finance' ? 'Finans paneli açıldı! 🔑' : 'Yönetim paneli açıldı! ⚙️')
+          showToast(
+            targetPinTarget === 'finance'
+              ? 'Finans paneli açıldı! 🔑'
+              : targetPinTarget === 'tracking'
+              ? 'Takip & Operasyon paneli açıldı! 📋'
+              : 'Yönetim paneli açıldı! ⚙️'
+          )
         }}
       />
 

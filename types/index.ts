@@ -16,12 +16,15 @@ export interface Category {
   sort_order: number
 }
 
+export type CleaningStatus = 'clean' | 'dirty' | 'in_progress'
+
 export interface Unit {
   id: number
   category_id: number
   unit_number: number
   label: string
   is_active: boolean
+  cleaning_status?: CleaningStatus
   category?: Category
 }
 
@@ -39,6 +42,7 @@ export interface Reservation {
   price_type?: 'daily' | 'total'
   price?: number
   deposit?: number
+  guest_count?: number
   created_at: string
   unit?: Unit
 }
@@ -57,6 +61,7 @@ export interface QuickReservationPayload {
   price_type?: 'daily' | 'total'
   price?: number
   deposit?: number
+  guest_count?: number
 }
 
 // Müsaitlik sorgulama sonucu
