@@ -475,6 +475,22 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Teknolojiden Anlamayanlar İçin Kolay Kullanım İpucu Kutusu */}
+            <div className="bg-gradient-to-r from-cyan-950/40 via-[#0d1e34] to-teal-950/40 border border-[#00b4d8]/30 rounded-2xl p-3 sm:p-3.5 flex items-start gap-3 shadow-lg">
+              <div className="w-8 h-8 rounded-xl bg-[#00b4d8]/20 flex items-center justify-center text-lg shrink-0 mt-0.5">
+                💡
+              </div>
+              <div className="text-xs sm:text-sm text-[#8ba0b5] space-y-1">
+                <p className="font-bold text-white flex items-center gap-1.5">
+                  Resepsiyon Kolay Kullanım Rehberi
+                </p>
+                <p className="leading-relaxed">
+                  • <strong>Yeni Rezervasyon:</strong> Takvimdeki <span className="text-[#2a9d8f] font-bold">YEŞİL (Müsait)</span> kutucuklara dokunun.<br/>
+                  • <strong>Detay / Ödeme / İptal:</strong> <span className="text-red-400 font-bold">KIRMIZI (Kapora alındı)</span>, <span className="text-blue-400 font-bold">MAVİ (Ödeme alındı)</span> veya <span className="text-amber-400 font-bold">TURUNCU (Kapora bekliyor)</span> barlara dokunun.
+                </p>
+              </div>
+            </div>
+
             {/* FullCalendar Resource Timeline */}
             <CalendarView
               key={`${activeCategory}_${calendarRangeMode}`} // Mod veya Sekme değişince yeniden mount et
@@ -486,22 +502,26 @@ export default function HomePage() {
             />
 
             {/* Renk Lejantı */}
-            <div className="flex flex-wrap gap-4 text-sm text-[#8ba0b5] px-1">
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#2a9d8f]"></span>
-                Boş (Tıkla → Rezervasyon)
+            <div className="glass-card p-3 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm border border-white/10">
+              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                <span className="w-3.5 h-3.5 rounded-md bg-[#2a9d8f] shadow-sm"></span>
+                <strong className="text-white">Yeşil:</strong> Müsait (Tıkla → Rezerve Et)
               </span>
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#c0392b]"></span>
-                Dolu / Aktif
+              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                <span className="w-3.5 h-3.5 rounded-md bg-[#c0392b] shadow-sm"></span>
+                <strong className="text-white">Kırmızı:</strong> Dolu / Aktif
               </span>
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#e67e22]"></span>
-                Kapora Bekleniyor
+              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                <span className="w-3.5 h-3.5 rounded-md bg-[#e67e22] shadow-sm"></span>
+                <strong className="text-white">Turuncu:</strong> Kapora Bekliyor
               </span>
-              <span className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#2980b9]"></span>
-                Ödeme Tamamlandı / Arşivlendi
+              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                <span className="w-3.5 h-3.5 rounded-md bg-[#2980b9] shadow-sm"></span>
+                <strong className="text-white">Mavi:</strong> Ödeme Tamamlandı
+              </span>
+              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                <span className="w-3.5 h-3.5 rounded-md bg-[#8e44ad] shadow-sm"></span>
+                <strong className="text-white">Mor:</strong> 🔧 Bakımda
               </span>
             </div>
           </>
