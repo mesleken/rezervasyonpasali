@@ -20,10 +20,18 @@ import TabNavigation from '@/components/TabNavigation'
 import QuickReservationModal from '@/components/QuickReservationModal'
 import ReservationDetailDrawer from '@/components/ReservationDetailDrawer'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import PinModal from '@/components/PinModal'
+import FinanceDashboard from '@/components/FinanceDashboard'
 
 export default function HomePage() {
   // Sekme durumu
   const [activeCategory, setActiveCategory] = useState<CategorySlug>('bungalov')
+
+  // Ana görünüm modu ('calendar' | 'finance')
+  const [viewMode, setViewMode] = useState<'calendar' | 'finance'>('calendar')
+
+  // PIN Kodu Modalı durumu
+  const [pinModalOpen, setPinModalOpen] = useState(false)
 
   // Takvim tarih durumu
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -260,26 +268,50 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Ay Navigasyonu (Mobilde Ekrandan Taşmaz, Kompakt) */}
+          {/* Ay Navigasyonu + Yönetici Finans Butonu */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {viewMode === 'calendar' && (
+              <>
+                <button
+                  onClick={() => goMonth(-1)}
+                  className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
+                  aria-label="Önceki Ay"
+                >‹</button>
+                <span className="font-display font-bold text-xs sm:text-base min-w-[95px] sm:min-w-[150px] text-center text-white truncate px-0.5">
+                  {monthLabel}
+                </span>
+                <button
+                  onClick={() => goMonth(1)}
+                  className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
+                  aria-label="Sonraki Ay"
+                >›</button>
+                <button
+                  onClick={() => setCurrentDate(new Date())}
+                  className="btn-ghost px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shrink-0 touch-target"
+                >
+                  Bugün
+                </button>
+              </>
+            )}
+
+            {/* Kilitli Finans Raporları Butonu */}
             <button
-              onClick={() => goMonth(-1)}
-              className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
-              aria-label="Önceki Ay"
-            >‹</button>
-            <span className="font-display font-bold text-xs sm:text-base min-w-[95px] sm:min-w-[150px] text-center text-white truncate px-0.5">
-              {monthLabel}
-            </span>
-            <button
-              onClick={() => goMonth(1)}
-              className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
-              aria-label="Sonraki Ay"
-            >›</button>
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="btn-ghost px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shrink-0 touch-target"
+              onClick={() => {
+                const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('pasali_finance_auth') === 'true'
+                if (isAuth) {
+                  setViewMode(prev => prev === 'finance' ? 'calendar' : 'finance')
+                } else {
+                  setPinModalOpen(true)
+                }
+              }}
+              className={`px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
+                viewMode === 'finance'
+                  ? 'bg-[#00b4d8] text-white border-[#00b4d8] shadow-lg shadow-cyan-950/50'
+                  : 'bg-gradient-to-r from-amber-500/20 to-cyan-500/20 border-amber-500/30 text-amber-300 hover:border-amber-400'
+              }`}
             >
-              Bugün
+              <span>🔒</span>
+              <span>{viewMode === 'finance' ? 'Takvim' : 'Finans'}</span>
             </button>
           </div>
         </div>
@@ -290,41 +322,55 @@ export default function HomePage() {
       ============================================================ */}
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-2 sm:px-4 py-4 space-y-4 overflow-x-hidden">
 
-        {/* Hızlı Müsaitlik Barı */}
-        <AvailabilityBar onSelectUnit={handleAvailabilitySelect} />
+        {viewMode === 'finance' ? (
+          <FinanceDashboard
+            onBack={() => setViewMode('calendar')}
+            onLogout={() => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('pasali_finance_auth')
+              }
+              setViewMode('calendar')
+              showToast('Finans modülü kilitlendi. 🔒')
+            }}
+          />
+        ) : (
+          <>
+            {/* Hızlı Müsaitlik Barı */}
+            <AvailabilityBar onSelectUnit={handleAvailabilitySelect} />
 
-        {/* Sekme Navigasyonu */}
-        <TabNavigation active={activeCategory} onChange={setActiveCategory} />
+            {/* Sekme Navigasyonu */}
+            <TabNavigation active={activeCategory} onChange={setActiveCategory} />
 
-        {/* FullCalendar Resource Timeline */}
-        <CalendarView
-          key={activeCategory} // Sekme değişince yeniden mount et
-          categorySlug={activeCategory}
-          currentDate={currentDate}
-          onDateRangeSelect={handleDateRangeSelect}
-          onEventClick={handleEventClick}
-        />
+            {/* FullCalendar Resource Timeline */}
+            <CalendarView
+              key={activeCategory} // Sekme değişince yeniden mount et
+              categorySlug={activeCategory}
+              currentDate={currentDate}
+              onDateRangeSelect={handleDateRangeSelect}
+              onEventClick={handleEventClick}
+            />
 
-        {/* Renk Lejantı */}
-        <div className="flex flex-wrap gap-4 text-sm text-[#8ba0b5] px-1">
-          <span className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#2a9d8f]"></span>
-            Boş (Tıkla → Rezervasyon)
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#c0392b]"></span>
-            Dolu / Aktif
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#e67e22]"></span>
-            Kapora Bekleniyor
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#2980b9]"></span>
-            Ödeme Tamamlandı / Arşivlendi
-          </span>
-        </div>
-
+            {/* Renk Lejantı */}
+            <div className="flex flex-wrap gap-4 text-sm text-[#8ba0b5] px-1">
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#2a9d8f]"></span>
+                Boş (Tıkla → Rezervasyon)
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#c0392b]"></span>
+                Dolu / Aktif
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#e67e22]"></span>
+                Kapora Bekleniyor
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#2980b9]"></span>
+                Ödeme Tamamlandı / Arşivlendi
+              </span>
+            </div>
+          </>
+        )}
       </main>
 
       {/* ============================================================
@@ -360,6 +406,17 @@ export default function HomePage() {
         confirmVariant="danger"
         onConfirm={handleCancelConfirm}
         onCancel={() => { setConfirmOpen(false); setPendingCancelId(null) }}
+      />
+
+      {/* PIN Kodu Doğrulama Modalı */}
+      <PinModal
+        isOpen={pinModalOpen}
+        onClose={() => setPinModalOpen(false)}
+        onSuccess={() => {
+          setPinModalOpen(false)
+          setViewMode('finance')
+          showToast('Finans modülü başarıyla açıldı! 🔑')
+        }}
       />
 
       {/* Toast Bildirimi */}
