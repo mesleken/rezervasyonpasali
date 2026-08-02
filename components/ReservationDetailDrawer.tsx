@@ -25,11 +25,20 @@ export default function ReservationDetailDrawer({
 }: Props) {
   const [activateDeposit, setActivateDeposit] = useState<string>('')
 
+  // Arka plan sayfa kaydırmasını kilitle
   useEffect(() => {
-    if (reservation) {
-      setActivateDeposit(reservation.deposit ? String(reservation.deposit) : '')
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      if (reservation) {
+        setActivateDeposit(reservation.deposit ? String(reservation.deposit) : '')
+      }
+    } else {
+      document.body.style.overflow = ''
     }
-  }, [reservation])
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, reservation])
 
   if (!isOpen || !reservation) return null
 
@@ -40,72 +49,56 @@ export default function ReservationDetailDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Drawer — alttan veya sağdan açılır (mobil: alt, tablet: sağ) */}
-      <div className="fixed inset-x-0 bottom-0 tablet:right-0 tablet:inset-x-auto tablet:inset-y-0
-                      tablet:w-96 z-50">
-        <div className="glass-card h-full rounded-b-none tablet:rounded-l-2xl tablet:rounded-r-none
-                        overflow-y-auto shadow-2xl shadow-black/70 flex flex-col">
+      {/* Modal Kart Container — Dikdörtgen Çerçeve */}
+      <div className="fixed inset-x-3 top-1/2 -translate-y-1/2 z-50 max-w-lg mx-auto max-h-[92vh] flex flex-col overflow-x-hidden touch-pan-y w-[calc(100vw-1.5rem)]">
+        <div className="glass-card overflow-x-hidden overflow-y-hidden shadow-2xl shadow-black/80 flex flex-col max-h-[92vh] border border-[#00b4d8]/30 w-full touch-pan-y rounded-2xl">
 
-          {/* Başlık */}
-          <div className="bg-gradient-to-r from-[rgba(0,180,216,0.15)] to-transparent
-                          border-b border-[rgba(0,180,216,0.15)] px-5 py-4 flex justify-between items-center
-                          sticky top-0">
+          {/* Sabit Üst Header — Birim İsmi, Tarih Bilgisi ve Kapat Butonu */}
+          <div className="bg-[#0f172a] border-b border-[rgba(0,180,216,0.25)] px-4 py-3 flex justify-between items-center shrink-0 z-10 w-full overflow-x-hidden">
             <div>
-              <div className="font-bold text-lg font-display">Rezervasyon Detayı</div>
-              <div className="text-xs text-[#5c748a] mt-0.5">#{reservation.id.slice(0, 8)}</div>
+              <div className="font-bold text-base sm:text-lg font-display flex items-center gap-2 text-white">
+                {unit?.category && (
+                  <span>{(unit.category as { icon?: string }).icon}</span>
+                )}
+                <span>{unit?.label || `Birim #${reservation.unit_id}`} — Rezervasyon Detayı</span>
+              </div>
+              <div className="text-[#8ba0b5] text-xs mt-0.5">
+                {formatDateTR(reservation.check_in)} – {formatDateTR(reservation.check_out)}
+                {nights > 0 && (
+                  <span className="ml-2 text-[#00b4d8] font-semibold">({nights} gece)</span>
+                )}
+              </div>
             </div>
+
+            {/* Sağ Üst Kapat Butonu */}
             <button
+              type="button"
               onClick={onClose}
-              className="text-[#8ba0b5] hover:text-white text-2xl touch-target"
-            >×</button>
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-red-500/30 border border-white/20 text-white font-extrabold flex items-center justify-center text-lg active:scale-95 transition-all cursor-pointer shrink-0 touch-target shadow-md ml-2"
+              aria-label="Kapat"
+            >
+              ✕
+            </button>
           </div>
 
-          {/* İçerik */}
-          <div className="flex-1 p-5 space-y-4">
-            {/* Birim Bilgisi */}
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-xs text-[#8ba0b5] mb-1">Birim</div>
-              <div className="font-semibold text-white">
-                {unit?.category && (
-                  <span className="mr-2">
-                    {(unit.category as { icon?: string }).icon}
-                  </span>
-                )}
-                {unit?.label || `Birim #${reservation.unit_id}`}
-              </div>
-            </div>
-
-            {/* Tarihler */}
-            <div className="bg-white/5 rounded-xl p-4 grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-xs text-[#8ba0b5] mb-1">📅 Giriş</div>
-                <div className="font-semibold">{formatDateTR(reservation.check_in)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-[#8ba0b5] mb-1">📅 Çıkış</div>
-                <div className="font-semibold">{formatDateTR(reservation.check_out)}</div>
-              </div>
-              <div className="col-span-2 text-center">
-                <span className="text-[#00b4d8] font-bold">{nights} gece</span>
-              </div>
-            </div>
-
+          {/* İçerik — Yalnızca Dikey Kaydırma (Scrollable Body) */}
+          <div className="p-4 sm:p-5 space-y-4 overflow-y-auto overflow-x-hidden touch-pan-y flex-1 w-full max-w-full">
             {/* Misafir Bilgileri */}
-            <div className="bg-white/5 rounded-xl p-4 space-y-3">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
               <div>
-                <div className="text-xs text-[#8ba0b5] mb-1">👤 Misafir</div>
-                <div className="font-bold text-lg">{reservation.guest_name}</div>
+                <div className="text-xs text-[#8ba0b5] mb-1">👤 Misafir İsim Soyisim</div>
+                <div className="font-bold text-lg text-white">{reservation.guest_name}</div>
               </div>
               {reservation.phone && (
                 <div>
-                  <div className="text-xs text-[#8ba0b5] mb-1">📞 Telefon</div>
+                  <div className="text-xs text-[#8ba0b5] mb-1">📞 Telefon Numarası</div>
                   <a
                     href={`tel:${reservation.phone}`}
-                    className="font-semibold text-[#00b4d8] hover:underline"
+                    className="font-semibold text-[#00b4d8] hover:underline text-base"
                   >
                     {reservation.phone}
                   </a>
@@ -114,7 +107,9 @@ export default function ReservationDetailDrawer({
               {reservation.notes && (
                 <div>
                   <div className="text-xs text-[#8ba0b5] mb-1">📝 Notlar</div>
-                  <div className="text-[#8ba0b5] italic">{reservation.notes}</div>
+                  <div className="text-white/90 italic bg-black/30 p-2.5 rounded-lg border border-white/5 text-sm">
+                    {reservation.notes}
+                  </div>
                 </div>
               )}
             </div>
@@ -194,9 +189,9 @@ export default function ReservationDetailDrawer({
             })()}
 
             {/* Durum */}
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-xs text-[#8ba0b5] mb-1">Durum</div>
-              <div className={`font-semibold ${
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
+              <div className="text-xs text-[#8ba0b5] mb-1">Rezervasyon Durumu</div>
+              <div className={`font-semibold text-base ${
                 reservation.status === 'active' ? 'text-[#2a9d8f]'
                 : reservation.status === 'pending' ? 'text-[#f4a261]'
                 : reservation.status === 'completed' ? 'text-[#3498db]'
@@ -208,63 +203,76 @@ export default function ReservationDetailDrawer({
           </div>
 
           {/* Aksiyon Butonları — Alt kısım sabit */}
-          {reservation.status !== 'cancelled' && (
-            <div className="p-5 border-t border-[rgba(0,180,216,0.12)] space-y-3">
-              {/* Ödeme Tamamlandı Olarak İşaretle (Completed) */}
-              {reservation.status !== 'completed' && onComplete && (
-                <button
-                  onClick={() => {
-                    const price = reservation.price || 0
-                    const isDaily = reservation.price_type !== 'total'
-                    const totalAmount = isDaily ? price * (nights > 0 ? nights : 1) : price
-                    onComplete(reservation.id, totalAmount)
-                  }}
-                  className="w-full py-3.5 rounded-xl bg-blue-600/25 border border-blue-500
-                             text-white font-bold transition-all hover:bg-blue-600/40
-                             touch-target flex items-center justify-center gap-2 shadow-lg shadow-blue-950/40"
-                >
-                  🎉 Ödeme Tamamlandı (Tamamlandı Olarak Arşivle)
-                </button>
-              )}
-
-              {/* Kapora Bekliyorsa → Kapora Girişi ve Aktife Çevir */}
-              {reservation.status === 'pending' && onActivate && (
-                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2.5">
-                  <div className="text-xs text-amber-300 font-bold flex justify-between items-center">
-                    <span>💵 Alınan Kapora Tutarı (TL)</span>
-                    <span className="text-[10px] text-[#8ba0b5]">İsteğe Bağlı Değiştirilebilir</span>
-                  </div>
-                  <input
-                    type="number"
-                    value={activateDeposit}
-                    onChange={e => setActivateDeposit(e.target.value)}
-                    placeholder="Örn: 500"
-                    className="form-input text-base font-bold bg-black/40 text-amber-300 border-amber-500/40 focus:border-amber-400"
-                    min="0"
-                  />
+          <div className="p-4 sm:p-5 border-t border-[rgba(0,180,216,0.12)] space-y-2.5 shrink-0 bg-[#0f172a]/95">
+            {reservation.status !== 'cancelled' && (
+              <>
+                {/* Ödeme Tamamlandı Olarak İşaretle (Completed) */}
+                {reservation.status !== 'completed' && onComplete && (
                   <button
-                    onClick={() => onActivate(reservation.id, Number(activateDeposit) || 0)}
-                    className="w-full py-3.5 rounded-xl bg-[#2a9d8f] hover:bg-[#218378]
-                               text-white font-bold transition-all touch-target shadow-lg shadow-emerald-950/40
-                               flex items-center justify-center gap-2"
+                    onClick={() => {
+                      const price = reservation.price || 0
+                      const isDaily = reservation.price_type !== 'total'
+                      const totalAmount = isDaily ? price * (nights > 0 ? nights : 1) : price
+                      onComplete(reservation.id, totalAmount)
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-blue-600/25 border border-blue-500
+                               text-white font-bold transition-all hover:bg-blue-600/40
+                               touch-target flex items-center justify-center gap-2 shadow-lg shadow-blue-950/40"
                   >
-                    ✅ Aktife Çevir (Kaporayı Kaydet & Kırmızı Yap)
+                    🎉 Ödeme Tamamlandı (Tamamlandı Olarak Arşivle)
                   </button>
-                </div>
-              )}
-              {/* İptal Et */}
-              <button
-                onClick={() => onCancel(reservation.id)}
-                className="w-full py-3.5 rounded-xl bg-[rgba(192,57,43,0.15)] border border-[rgba(192,57,43,0.4)]
-                           text-red-400 font-semibold transition-all hover:bg-[rgba(192,57,43,0.3)]
-                           touch-target"
-              >
-                ❌ Rezervasyonu İptal Et
-              </button>
-            </div>
-          )}
+                )}
+
+                {/* Kapora Bekliyorsa → Kapora Girişi ve Aktife Çevir */}
+                {reservation.status === 'pending' && onActivate && (
+                  <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2.5">
+                    <div className="text-xs text-amber-300 font-bold flex justify-between items-center">
+                      <span>💵 Alınan Kapora Tutarı (TL)</span>
+                      <span className="text-[10px] text-[#8ba0b5]">İsteğe Bağlı Değiştirilebilir</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={activateDeposit}
+                      onChange={e => setActivateDeposit(e.target.value)}
+                      placeholder="Örn: 500"
+                      className="form-input text-base font-bold bg-black/40 text-amber-300 border-amber-500/40 focus:border-amber-400"
+                      min="0"
+                    />
+                    <button
+                      onClick={() => onActivate(reservation.id, Number(activateDeposit) || 0)}
+                      className="w-full py-3.5 rounded-xl bg-[#2a9d8f] hover:bg-[#218378]
+                                 text-white font-bold transition-all touch-target shadow-lg shadow-emerald-950/40
+                                 flex items-center justify-center gap-2"
+                    >
+                      ✅ Aktife Çevir (Kaporayı Kaydet & Kırmızı Yap)
+                    </button>
+                  </div>
+                )}
+
+                {/* İptal Et */}
+                <button
+                  onClick={() => onCancel(reservation.id)}
+                  className="w-full py-3 rounded-xl bg-[rgba(192,57,43,0.15)] border border-[rgba(192,57,43,0.4)]
+                             text-red-400 font-semibold transition-all hover:bg-[rgba(192,57,43,0.3)]
+                             touch-target"
+                >
+                  ❌ Rezervasyonu İptal Et
+                </button>
+              </>
+            )}
+
+            {/* Her Zaman Görünür Kapat / Kapat Butonu */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full py-3 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 text-[#8ba0b5] hover:text-white text-sm font-semibold transition-all touch-target flex items-center justify-center gap-1.5"
+            >
+              ✕ Kapat
+            </button>
+          </div>
         </div>
       </div>
     </>
   )
 }
+

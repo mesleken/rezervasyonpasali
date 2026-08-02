@@ -46,6 +46,8 @@ export interface Reservation {
 // Hızlı Rezervasyon Formu için (sadece 3 alan)
 export interface QuickReservationPayload {
   unit_id: number
+  category_slug?: CategorySlug
+  unit_number?: number
   guest_name: string
   phone?: string
   notes?: string

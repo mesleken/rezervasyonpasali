@@ -176,47 +176,49 @@ export default function CalendarView({
           <div className="text-[#00b4d8] text-sm font-semibold animate-pulse">Yükleniyor...</div>
         </div>
       )}
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[resourceTimelinePlugin, interactionPlugin]}
-        initialView="resourceTimelineMonth"
-        initialDate={currentDate}
-        resources={resources}
-        events={events}
-        schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
-        headerToolbar={false} // Kendi header'ımızı kullanıyoruz
-        resourceAreaHeaderContent={`${categoryConfig.icon} ${categoryConfig.label}`}
-        resourceAreaWidth="130px"
-        slotDuration={{ days: 1 }}
-        slotLabelFormat={{ day: 'numeric', weekday: 'short' }}
-        displayEventTime={false}
-        locale="tr"
-        height="auto"
-        // Boş alana tıklama → Yeni rezervasyon
-        selectable
-        selectMirror
-        select={(info) => {
-          const unitNumber = resources.find(r => r.id === info.resource?.id)?.unitId
-          if (!unitNumber) return
-          const endDate = new Date(info.endStr)
-          endDate.setDate(endDate.getDate() - 1) // FullCalendar end exclusive
-          onDateRangeSelect(info.resource!.id as unknown as number, info.startStr, endDate.toISOString().split('T')[0])
-        }}
-        // Mevcut rezervasyona veya yeşil boş bara tıklama
-        eventClick={(info) => {
-          const props = info.event.extendedProps
-          if (props.isFreeSlot) {
-            onDateRangeSelect(props.unitNum, props.checkIn, props.checkOut)
-          } else {
-            const res = props.reservation as Reservation
-            onEventClick(res)
-          }
-        }}
-        // Boş hücre hover efekti
-        eventDidMount={(info) => {
-          info.el.title = `${info.event.title}`
-        }}
-      />
+      <div className="min-w-[1100px]">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[resourceTimelinePlugin, interactionPlugin]}
+          initialView="resourceTimelineMonth"
+          initialDate={currentDate}
+          resources={resources}
+          events={events}
+          schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
+          headerToolbar={false} // Kendi header'ımızı kullanıyoruz
+          resourceAreaHeaderContent={`${categoryConfig.icon} ${categoryConfig.label}`}
+          resourceAreaWidth="130px"
+          slotDuration={{ days: 1 }}
+          slotLabelFormat={{ day: 'numeric', weekday: 'short' }}
+          displayEventTime={false}
+          locale="tr"
+          height="auto"
+          // Boş alana tıklama → Yeni rezervasyon
+          selectable
+          selectMirror
+          select={(info) => {
+            const unitNumber = resources.find(r => r.id === info.resource?.id)?.unitId
+            if (!unitNumber) return
+            const endDate = new Date(info.endStr)
+            endDate.setDate(endDate.getDate() - 1) // FullCalendar end exclusive
+            onDateRangeSelect(info.resource!.id as unknown as number, info.startStr, endDate.toISOString().split('T')[0])
+          }}
+          // Mevcut rezervasyona veya yeşil boş bara tıklama
+          eventClick={(info) => {
+            const props = info.event.extendedProps
+            if (props.isFreeSlot) {
+              onDateRangeSelect(props.unitNum!, props.checkIn!, props.checkOut!)
+            } else {
+              const res = props.reservation as Reservation
+              onEventClick(res)
+            }
+          }}
+          // Boş hücre hover efekti
+          eventDidMount={(info) => {
+            info.el.title = `${info.event.title}`
+          }}
+        />
+      </div>
     </div>
   )
 }

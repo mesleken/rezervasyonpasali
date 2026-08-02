@@ -1,12 +1,19 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { CATEGORIES } from '@/types'
 import type { CategorySlug, Reservation, Unit, Category, QuickReservationPayload, AvailableUnit } from '@/types'
 import { monthNameTR } from '@/lib/dateUtils'
 
-import CalendarView from '@/components/CalendarView'
+const CalendarView = dynamic(() => import('@/components/CalendarView'), {
+  ssr: false,
+  loading: () => (
+    <div className="glass-card flex items-center justify-center h-64 min-h-[350px]">
+      <div className="text-[#00b4d8] animate-pulse font-semibold">📅 Takvim yükleniyor...</div>
+    </div>
+  )
+})
 
 import AvailabilityBar from '@/components/AvailabilityBar'
 import TabNavigation from '@/components/TabNavigation'
@@ -20,6 +27,18 @@ export default function HomePage() {
 
   // Takvim tarih durumu
   const [currentDate, setCurrentDate] = useState(new Date())
+
+  // Tüm veritabanı birimleri (gerçek id eşleştirmeleri için)
+  const [allUnits, setAllUnits] = useState<Unit[]>([])
+
+  useEffect(() => {
+    fetch('/api/units')
+      .then(res => res.json())
+      .then(json => {
+        if (json.data) setAllUnits(json.data)
+      })
+      .catch(console.error)
+  }, [])
 
   // Rezervasyon modalı
   const [modalOpen, setModalOpen] = useState(false)
@@ -77,17 +96,25 @@ export default function HomePage() {
     // resourceId "bungalov_2" formatında gelir, sayı kısmını çıkar
     const unitNum = typeof resourceId === 'string'
       ? parseInt(resourceId.split('_').pop() || '1')
-      : resourceId
+      : Number(resourceId)
+
+    // Gerçek veritabanı birimini bul (Örn: Çadır 3 için veritabanındaki gerçek id)
+    const matchedUnit = allUnits.find(u => {
+      const uCatSlug = u.category?.slug
+      return u.unit_number === unitNum && (uCatSlug ? uCatSlug === activeCategory : true)
+    })
+
+    const realUnitId = matchedUnit ? matchedUnit.id : unitNum
 
     setModalUnit({
-      id: unitNum,  // gerçek id Supabase'den gelecek, şimdilik unit_number kullanılıyor
-      category_id: 0,
+      id: realUnitId,
+      category_id: matchedUnit?.category_id || 0,
       unit_number: unitNum,
       label: `${cat.label} ${unitNum}`,
       is_active: true
     })
     setModalCategory({
-      id: 0,
+      id: matchedUnit?.category?.id || 0,
       slug: activeCategory,
       label: cat.label,
       icon: cat.icon,
@@ -209,20 +236,21 @@ export default function HomePage() {
   const monthLabel = `${monthNameTR(currentDate.getMonth())} ${currentDate.getFullYear()}`
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col overflow-x-hidden w-full max-w-[100vw]">
       {/* ============================================================
           HEADER
       ============================================================ */}
       <header className="sticky top-0 z-30 bg-[rgba(7,17,30,0.92)] backdrop-blur-md
-                         border-b border-[rgba(0,180,216,0.12)] px-4 py-3">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#2a9d8f]
-                            flex items-center justify-center text-xl shadow-lg shadow-cyan-900/40">
+                         border-b border-[rgba(0,180,216,0.12)] px-2.5 sm:px-4 py-2.5 sm:py-3 w-full overflow-x-hidden">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-1.5 sm:gap-4">
+          {/* Logo & Başlık */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#2a9d8f]
+                            flex items-center justify-center text-base sm:text-xl shadow-lg shadow-cyan-900/40">
               🏕️
             </div>
             <div>
-              <div className="font-display font-bold text-base leading-tight
+              <div className="font-display font-bold text-sm sm:text-base leading-tight
                               bg-gradient-to-r from-white to-[#00b4d8] bg-clip-text text-transparent">
                 PAŞALI
               </div>
@@ -232,22 +260,24 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Ay Navigasyonu */}
-          <div className="flex items-center gap-3">
+          {/* Ay Navigasyonu (Mobilde Ekrandan Taşmaz, Kompakt) */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => goMonth(-1)}
-              className="btn-ghost w-10 h-10 rounded-xl text-lg touch-target"
+              className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
+              aria-label="Önceki Ay"
             >‹</button>
-            <span className="font-display font-bold text-base min-w-[160px] text-center">
+            <span className="font-display font-bold text-xs sm:text-base min-w-[95px] sm:min-w-[150px] text-center text-white truncate px-0.5">
               {monthLabel}
             </span>
             <button
               onClick={() => goMonth(1)}
-              className="btn-ghost w-10 h-10 rounded-xl text-lg touch-target"
+              className="btn-ghost w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-base sm:text-lg flex items-center justify-center shrink-0 touch-target"
+              aria-label="Sonraki Ay"
             >›</button>
             <button
               onClick={() => setCurrentDate(new Date())}
-              className="btn-ghost px-3 h-10 rounded-xl text-sm touch-target"
+              className="btn-ghost px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shrink-0 touch-target"
             >
               Bugün
             </button>
@@ -256,9 +286,9 @@ export default function HomePage() {
       </header>
 
       {/* ============================================================
-          ANA İÇERİK
+          ANA İÇERİK — SADECE DİKEY KAYDIRMA
       ============================================================ */}
-      <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4 space-y-4">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full px-2 sm:px-4 py-4 space-y-4 overflow-x-hidden">
 
         {/* Hızlı Müsaitlik Barı */}
         <AvailabilityBar onSelectUnit={handleAvailabilitySelect} />

@@ -65,7 +65,29 @@ export async function GET(req: NextRequest) {
 // POST /api/reservations — Yeni rezervasyon oluştur
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { unit_id, guest_name, phone, notes, status, check_in, check_out, price_type, price, deposit } = body
+  let { unit_id, category_slug, unit_number, guest_name, phone, notes, status, check_in, check_out, price_type, price, deposit } = body
+
+  // Eğer category_slug ve unit_number sağlandıysa veritabanından doğru birim id'sini sorgula
+  if (category_slug && unit_number) {
+    const { data: cat } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('slug', category_slug)
+      .single()
+
+    if (cat) {
+      const { data: unit } = await supabase
+        .from('units')
+        .select('id')
+        .eq('category_id', cat.id)
+        .eq('unit_number', Number(unit_number))
+        .single()
+
+      if (unit) {
+        unit_id = unit.id
+      }
+    }
+  }
 
   // Zorunlu alan kontrolü
   if (!unit_id || !guest_name?.trim() || !check_in || !check_out) {
