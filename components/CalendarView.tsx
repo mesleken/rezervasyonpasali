@@ -12,12 +12,13 @@ interface Props {
   categorySlug: CategorySlug
   currentDate: Date
   rangeMode?: 'week' | 'month'
+  isPublicView?: boolean
   onDateRangeSelect: (unitId: number, start: string, end: string) => void
   onEventClick: (reservation: Reservation) => void
 }
 
 export default function CalendarView({
-  categorySlug, currentDate, rangeMode = 'month', onDateRangeSelect, onEventClick
+  categorySlug, currentDate, rangeMode = 'month', isPublicView = false, onDateRangeSelect, onEventClick
 }: Props) {
   const calendarRef = useRef<FullCalendar>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -46,13 +47,17 @@ export default function CalendarView({
     setResources(res)
   }, [categorySlug, categoryConfig])
 
-  // Rezervasyonları API'den yükle
+  // Rezervasyonları API'den yükle (Kamusal vs Yönetim Modu)
   const loadReservations = useCallback(async () => {
     setLoading(true)
     const y = currentDate.getFullYear()
     const m = currentDate.getMonth() + 1
     try {
-      const res = await fetch(`/api/reservations?categorySlug=${categorySlug}&year=${y}&month=${m}&t=${Date.now()}`)
+      const endpoint = isPublicView
+        ? `/api/public/calendar?categorySlug=${categorySlug}&year=${y}&month=${m}&t=${Date.now()}`
+        : `/api/reservations?categorySlug=${categorySlug}&year=${y}&month=${m}&t=${Date.now()}`
+
+      const res = await fetch(endpoint)
       const text = await res.text()
       if (!text) {
         setEvents([])
@@ -62,21 +67,29 @@ export default function CalendarView({
       if (!res.ok) throw new Error(json.error || 'İstek başarısız')
 
       // Dolu rezervasyonlar & Bakım modları
-      const busyEvts: CalendarEvent[] = (json.data || []).map((r: Reservation) => {
+      const busyEvts: CalendarEvent[] = (json.data || []).map((r: any) => {
         const isMaintenance = r.status === 'maintenance' || r.guest_name?.toUpperCase().includes('BAKIM')
         const colors = isMaintenance
           ? { bg: '#8e44ad', border: '#9b59b6', text: '#ffffff' }
           : (STATUS_COLORS[r.status as ReservationStatus] || STATUS_COLORS.active)
 
+        const title = isPublicView
+          ? (isMaintenance ? '🔧 BAKIMDA' : '⛔ DOLU')
+          : (isMaintenance ? '🔧 BAKIMDA' : r.guest_name + (r.phone ? ` · ${r.phone}` : ''))
+
         return {
-          id: r.id,
-          resourceId: `${categorySlug}_${r.unit?.unit_number}`,
-          title: isMaintenance ? '🔧 BAKIMDA' : r.guest_name + (r.phone ? ` · ${r.phone}` : ''),
+          id: String(r.id),
+          resourceId: `${categorySlug}_${r.unit?.unit_number || r.unit_number}`,
+          title,
           start: `${r.check_in}T12:00:00`,
           end: `${r.check_out}T00:00:00`,
-          backgroundColor: colors.bg,
-          borderColor: colors.border,
-          extendedProps: { reservation: r, status: isMaintenance ? 'maintenance' : r.status },
+          backgroundColor: isPublicView ? (isMaintenance ? '#8e44ad' : '#c0392b') : colors.bg,
+          borderColor: isPublicView ? (isMaintenance ? '#9b59b6' : '#e74c3c') : colors.border,
+          extendedProps: {
+            reservation: isPublicView ? undefined : (r as Reservation),
+            status: isMaintenance ? 'maintenance' : r.status,
+            isPublicView
+          },
         }
       })
 
@@ -89,8 +102,8 @@ export default function CalendarView({
 
       for (let unitNum = 1; unitNum <= categoryConfig.count; unitNum++) {
         const unitBusy = (json.data || [])
-          .filter((r: Reservation) => r.unit?.unit_number === unitNum)
-          .sort((a: Reservation, b: Reservation) => a.check_in.localeCompare(b.check_in))
+          .filter((r: any) => Number(r.unit?.unit_number || r.unit_number) === unitNum)
+          .sort((a: any, b: any) => a.check_in.localeCompare(b.check_in))
 
         let currStart = monthStart
         for (const r of unitBusy) {
@@ -273,9 +286,8 @@ export default function CalendarView({
             const props = info.event.extendedProps
             if (props.isFreeSlot) {
               onDateRangeSelect(props.unitNum!, props.checkIn!, props.checkOut!)
-            } else {
-              const res = props.reservation as Reservation
-              onEventClick(res)
+            } else if (!isPublicView && props.reservation) {
+              onEventClick(props.reservation as Reservation)
             }
           }}
           // Boş hücre hover efekti

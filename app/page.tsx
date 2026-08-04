@@ -29,15 +29,15 @@ export default function HomePage() {
   // Sekme durumu
   const [activeCategory, setActiveCategory] = useState<CategorySlug>('bungalov')
 
-  // Ana görünüm modu ('calendar' | 'finance' | 'management' | 'tracking')
-  const [viewMode, setViewMode] = useState<'calendar' | 'finance' | 'management' | 'tracking'>('calendar')
+  // Ana görünüm modu ('public' | 'reservation' | 'finance' | 'management' | 'tracking')
+  const [viewMode, setViewMode] = useState<'public' | 'reservation' | 'finance' | 'management' | 'tracking'>('public')
 
   // Takvim görünüm aralığı ('week' | 'month') — varsayılan olarak mobil uyumlu 7 Gün (Haftalık)
   const [calendarRangeMode, setCalendarRangeMode] = useState<'week' | 'month'>('week')
 
   // PIN Kodu Modalı durumu & Hedef mod
   const [pinModalOpen, setPinModalOpen] = useState(false)
-  const [targetPinTarget, setTargetPinTarget] = useState<'finance' | 'management' | 'tracking'>('finance')
+  const [targetPinTarget, setTargetPinTarget] = useState<'reservation' | 'finance' | 'management' | 'tracking'>('reservation')
 
   // Takvim tarih durumu
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -356,13 +356,46 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Yönetici Butonları (Takip, Finans & Yönetim) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Menü Butonları (Müsaitlik, Rezervasyon, Takip, Finans & Yönetim) */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0 overflow-x-auto scrollbar-hide py-1 max-w-full">
+            {/* Şifresiz Müşteri Müsaitlik Sekmesi (Ana Sayfa) */}
+            <button
+              onClick={() => setViewMode('public')}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
+                viewMode === 'public'
+                  ? 'bg-[#00b4d8] text-white border-[#00b4d8] shadow-lg shadow-cyan-950/50'
+                  : 'bg-white/5 border-white/10 text-[#8ba0b5] hover:text-white'
+              }`}
+            >
+              <span>🌐</span>
+              <span>Müsaitlik</span>
+            </button>
+
+            {/* Kilitli Rezervasyon Yönetim Sekmesi (PIN: 8620) */}
+            <button
+              onClick={() => {
+                if (viewMode === 'reservation') {
+                  setViewMode('public')
+                } else {
+                  setTargetPinTarget('reservation')
+                  setPinModalOpen(true)
+                }
+              }}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all touch-target flex items-center gap-1.5 border shrink-0 ${
+                viewMode === 'reservation'
+                  ? 'bg-[#00b4d8] text-white border-[#00b4d8] shadow-lg shadow-cyan-950/50'
+                  : 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300 hover:border-blue-400'
+              }`}
+            >
+              <span>📅</span>
+              <span>{viewMode === 'reservation' ? 'Çık' : 'Rezervasyon'}</span>
+            </button>
+
             {/* Kilitli Günlük Takip & Operasyon Butonu */}
             <button
               onClick={() => {
                 if (viewMode === 'tracking') {
-                  setViewMode('calendar')
+                  setViewMode('public')
                 } else {
                   setTargetPinTarget('tracking')
                   setPinModalOpen(true)
@@ -375,14 +408,14 @@ export default function HomePage() {
               }`}
             >
               <span>📋</span>
-              <span>{viewMode === 'tracking' ? 'Takvim' : 'Takip'}</span>
+              <span>{viewMode === 'tracking' ? 'Çık' : 'Takip'}</span>
             </button>
 
             {/* Kilitli Finans Raporları Butonu */}
             <button
               onClick={() => {
                 if (viewMode === 'finance') {
-                  setViewMode('calendar')
+                  setViewMode('public')
                 } else {
                   setTargetPinTarget('finance')
                   setPinModalOpen(true)
@@ -395,14 +428,14 @@ export default function HomePage() {
               }`}
             >
               <span>🔒</span>
-              <span>{viewMode === 'finance' ? 'Takvim' : 'Finans'}</span>
+              <span>{viewMode === 'finance' ? 'Çık' : 'Finans'}</span>
             </button>
 
             {/* Kilitli Tesis Yönetim Butonu */}
             <button
               onClick={() => {
                 if (viewMode === 'management') {
-                  setViewMode('calendar')
+                  setViewMode('public')
                 } else {
                   setTargetPinTarget('management')
                   setPinModalOpen(true)
@@ -415,7 +448,7 @@ export default function HomePage() {
               }`}
             >
               <span>⚙️</span>
-              <span>{viewMode === 'management' ? 'Takvim' : 'Yönetim'}</span>
+              <span>{viewMode === 'management' ? 'Çık' : 'Yönetim'}</span>
             </button>
           </div>
         </div>
@@ -428,18 +461,18 @@ export default function HomePage() {
 
         {viewMode === 'tracking' ? (
           <TrackingDashboard
-            onBack={() => setViewMode('calendar')}
-            onLogout={() => setViewMode('calendar')}
+            onBack={() => setViewMode('public')}
+            onLogout={() => setViewMode('public')}
           />
         ) : viewMode === 'finance' ? (
           <FinanceDashboard
-            onBack={() => setViewMode('calendar')}
-            onLogout={() => setViewMode('calendar')}
+            onBack={() => setViewMode('public')}
+            onLogout={() => setViewMode('public')}
           />
         ) : viewMode === 'management' ? (
           <ManagementDashboard
-            onBack={() => setViewMode('calendar')}
-            onLogout={() => setViewMode('calendar')}
+            onBack={() => setViewMode('public')}
+            onLogout={() => setViewMode('public')}
           />
         ) : (
           <>
@@ -501,55 +534,86 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Teknolojiden Anlamayanlar İçin Kolay Kullanım İpucu Kutusu */}
-            <div className="bg-gradient-to-r from-cyan-950/40 via-[#0d1e34] to-teal-950/40 border border-[#00b4d8]/30 rounded-2xl p-3 sm:p-3.5 flex items-start gap-3 shadow-lg">
-              <div className="w-8 h-8 rounded-xl bg-[#00b4d8]/20 flex items-center justify-center text-lg shrink-0 mt-0.5">
-                💡
+            {/* Rehber İpucu Kutusu (Yayınlanan Yönetim Modunda Gösterilir) */}
+            {viewMode !== 'public' && (
+              <div className="bg-gradient-to-r from-blue-950/40 via-[#0d1e34] to-cyan-950/40 border border-blue-500/30 rounded-2xl p-3 sm:p-3.5 flex items-start gap-3 shadow-lg">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-lg shrink-0 mt-0.5">
+                  🔑
+                </div>
+                <div className="text-xs sm:text-sm text-[#8ba0b5] space-y-1">
+                  <p className="font-bold text-white flex items-center gap-1.5">
+                    Tesis Yönetimi — Tam Yetkili Rezervasyon Paneli
+                  </p>
+                  <p className="leading-relaxed">
+                    • <strong>Yeni Rezervasyon:</strong> Takvimdeki <span className="text-[#2a9d8f] font-bold">YEŞİL (Müsait)</span> kutucuklara dokunun.<br/>
+                    • <strong>Detay / İptal / Ödeme:</strong> Müşteri barlarına dokunarak detay çekmecesini açabilirsiniz.
+                  </p>
+                </div>
               </div>
-              <div className="text-xs sm:text-sm text-[#8ba0b5] space-y-1">
-                <p className="font-bold text-white flex items-center gap-1.5">
-                  Resepsiyon Kolay Kullanım Rehberi
-                </p>
-                <p className="leading-relaxed">
-                  • <strong>Yeni Rezervasyon:</strong> Takvimdeki <span className="text-[#2a9d8f] font-bold">YEŞİL (Müsait)</span> kutucuklara dokunun.<br/>
-                  • <strong>Detay / Ödeme / İptal:</strong> <span className="text-red-400 font-bold">KIRMIZI (Kapora alındı)</span>, <span className="text-blue-400 font-bold">MAVİ (Ödeme alındı)</span> veya <span className="text-amber-400 font-bold">TURUNCU (Kapora bekliyor)</span> barlara dokunun.
-                </p>
-              </div>
-            </div>
+            )}
 
             {/* FullCalendar Resource Timeline */}
             <CalendarView
-              key={`${activeCategory}_${calendarRangeMode}`} // Mod veya Sekme değişince yeniden mount et
+              key={`${activeCategory}_${calendarRangeMode}_${viewMode}`} // Mod değişince takvimi yenile
               categorySlug={activeCategory}
               currentDate={currentDate}
               rangeMode={calendarRangeMode}
-              onDateRangeSelect={handleDateRangeSelect}
-              onEventClick={handleEventClick}
+              isPublicView={viewMode === 'public'}
+              onDateRangeSelect={(unitId, start, end) => {
+                if (viewMode === 'public') {
+                  // Müşteri modunda boş yere tıklanınca sadece bilgilendirme yap
+                  showToast(`Seçilen Tarih: ${start} – ${end}. Hızlı sorgulama alanından müsaitliği sorgulayabilirsiniz! 🗓️`)
+                } else {
+                  handleDateRangeSelect(unitId, start, end)
+                }
+              }}
+              onEventClick={(res) => {
+                if (viewMode !== 'public') {
+                  handleEventClick(res)
+                }
+              }}
             />
 
-            {/* Renk Lejantı */}
-            <div className="glass-card p-3 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm border border-white/10">
-              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
-                <span className="w-3.5 h-3.5 rounded-md bg-[#2a9d8f] shadow-sm"></span>
-                <strong className="text-white">Yeşil:</strong> Müsait (Tıkla → Rezerve Et)
-              </span>
-              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
-                <span className="w-3.5 h-3.5 rounded-md bg-[#c0392b] shadow-sm"></span>
-                <strong className="text-white">Kırmızı:</strong> Dolu / Aktif
-              </span>
-              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
-                <span className="w-3.5 h-3.5 rounded-md bg-[#e67e22] shadow-sm"></span>
-                <strong className="text-white">Turuncu:</strong> Kapora Bekliyor
-              </span>
-              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
-                <span className="w-3.5 h-3.5 rounded-md bg-[#2980b9] shadow-sm"></span>
-                <strong className="text-white">Mavi:</strong> Ödeme Tamamlandı
-              </span>
-              <span className="flex items-center gap-1.5 text-[#8ba0b5]">
-                <span className="w-3.5 h-3.5 rounded-md bg-[#8e44ad] shadow-sm"></span>
-                <strong className="text-white">Mor:</strong> 🔧 Bakımda
-              </span>
-            </div>
+            {/* Renk Lejantı (Müşteri vs Yönetim) */}
+            {viewMode === 'public' ? (
+              <div className="glass-card p-3 flex flex-wrap items-center justify-start gap-6 text-xs sm:text-sm border border-white/10">
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#2a9d8f] shadow-sm"></span>
+                  <strong className="text-white">Yeşil:</strong> Müsait
+                </span>
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#c0392b] shadow-sm"></span>
+                  <strong className="text-white">Kırmızı:</strong> ⛔ Dolu
+                </span>
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#8e44ad] shadow-sm"></span>
+                  <strong className="text-white">Mor:</strong> 🔧 Bakımda
+                </span>
+              </div>
+            ) : (
+              <div className="glass-card p-3 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm border border-white/10">
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#2a9d8f] shadow-sm"></span>
+                  <strong className="text-white">Yeşil:</strong> Müsait (Tıkla → Rezerve Et)
+                </span>
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#c0392b] shadow-sm"></span>
+                  <strong className="text-white">Kırmızı:</strong> Dolu / Aktif
+                </span>
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#e67e22] shadow-sm"></span>
+                  <strong className="text-white">Turuncu:</strong> Kapora Bekliyor
+                </span>
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#2980b9] shadow-sm"></span>
+                  <strong className="text-white">Mavi:</strong> Ödeme Tamamlandı
+                </span>
+                <span className="flex items-center gap-1.5 text-[#8ba0b5]">
+                  <span className="w-3.5 h-3.5 rounded-md bg-[#8e44ad] shadow-sm"></span>
+                  <strong className="text-white">Mor:</strong> 🔧 Bakımda
+                </span>
+              </div>
+            )}
           </>
         )}
       </main>
@@ -589,23 +653,35 @@ export default function HomePage() {
         onCancel={() => { setConfirmOpen(false); setPendingCancelId(null) }}
       />
 
-      {/* PIN Kodu Doğrulama Modalı */}
+      {/* PIN Kodu Doğrulama Modalı (Giriş PIN: 8620) */}
       <PinModal
         isOpen={pinModalOpen}
         title={
-          targetPinTarget === 'finance'
+          targetPinTarget === 'reservation'
+            ? 'Rezervasyon Yönetim Paneli Girişi'
+            : targetPinTarget === 'finance'
             ? 'Finans Paneli Girişi'
             : targetPinTarget === 'tracking'
             ? 'Günlük Takip & Operasyon Girişi'
             : 'Tesis Yönetim Girişi'
         }
-        icon={targetPinTarget === 'finance' ? '📊' : targetPinTarget === 'tracking' ? '📋' : '⚙️'}
+        icon={
+          targetPinTarget === 'reservation'
+            ? '📅'
+            : targetPinTarget === 'finance'
+            ? '📊'
+            : targetPinTarget === 'tracking'
+            ? '📋'
+            : '⚙️'
+        }
         onClose={() => setPinModalOpen(false)}
         onSuccess={() => {
           setPinModalOpen(false)
           setViewMode(targetPinTarget)
           showToast(
-            targetPinTarget === 'finance'
+            targetPinTarget === 'reservation'
+              ? 'Rezervasyon paneli açıldı! 📅🔑'
+              : targetPinTarget === 'finance'
               ? 'Finans paneli açıldı! 🔑'
               : targetPinTarget === 'tracking'
               ? 'Takip & Operasyon paneli açıldı! 📋'
